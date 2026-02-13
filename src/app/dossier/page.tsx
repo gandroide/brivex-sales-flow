@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { 
   DndContext, 
   closestCenter, 
-  KeyboardSensor, 
   PointerSensor, 
   useSensor, 
   useSensors, 
@@ -15,7 +14,6 @@ import {
 } from '@dnd-kit/core';
 import { 
   arrayMove, 
-  sortableKeyboardCoordinates, 
 } from '@dnd-kit/sortable';
 
 import VoiceDealCreator from '@/components/pipedrive/VoiceDealCreator';
@@ -25,6 +23,7 @@ import DossierConfigModal from '@/components/dossier/DossierConfigModal';
 import HistoryModal from '../../components/dossier/HistoryModal'; // Relative Import Fix
 import VisualProductSelector from '@/components/dossier/VisualProductSelector';
 import ProductDetailModal from '@/components/dossier/ProductDetailModal';
+import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import { FileText, ArrowLeft, ShoppingBag, Plus, User, Edit2, X, Trash2, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/context/ToastContext'; // Import Toast
@@ -68,6 +67,14 @@ export default function DossierPage() {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false); // New
   const [isLoaded, setIsLoaded] = useState(false); // Prevent save before load
   
+  // Confirmation State
+  const [confirmationState, setConfirmationState] = useState<{
+    isOpen: boolean;
+    type: 'reset' | 'load';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    payload?: any;
+  }>({ isOpen: false, type: 'reset' });
+
   // New State for Visual Selection
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -90,7 +97,7 @@ export default function DossierPage() {
       }
     }
     setIsLoaded(true);
-  }, [isLoaded]);
+  }, []);
 
   // 2. Save to LocalStorage on Change
   useEffect(() => {
@@ -102,7 +109,7 @@ export default function DossierPage() {
       lastModified: Date.now()
     };
     localStorage.setItem('dossier_draft_v1', JSON.stringify(draft));
-  }, [sections, salesperson]);
+  }, [sections, salesperson, isLoaded]);
 
 
   // --- DND SENSORS ---
@@ -110,14 +117,6 @@ export default function DossierPage() {
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8, // Require 8px movement before drag starts
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-      keyboardCodes: {
-        start: ['Enter'],
-        cancel: ['Escape'],
-        end: ['Enter'],
       },
     })
   );
@@ -153,6 +152,24 @@ export default function DossierPage() {
       ...section,
       items: section.items.map(p => p.id === id ? { ...p, [field]: value } : p)
     })));
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleDuplicate = (product: any) => {
+    const newId = crypto.randomUUID();
+    const newProduct = { ...product, id: newId };
+    
+    setSections(prev => prev.map(section => {
+        const index = section.items.findIndex(p => p.id === product.id);
+        if (index !== -1) {
+            const newItems = [...section.items];
+            newItems.splice(index + 1, 0, newProduct);
+            return { ...section, items: newItems };
+        }
+        return section;
+    }));
+    
+    success('Item duplicado correctamente');
   };
 
   // --- SECTION MANAGEMENT ---
@@ -351,11 +368,17 @@ export default function DossierPage() {
   };
 
   const handleReset = () => {
-    if (confirm('¿Estás seguro de comenzar un nuevo proyecto? Se borrará el borrador actual.')) {
+    setConfirmationState({
+        isOpen: true,
+        type: 'reset'
+    });
+  };
+
+  const confirmReset = () => {
       setSections([{ id: 'unassigned', name: 'Sin Asignar', items: [] }]);
       setSalesperson('Johalis Montilla');
       localStorage.removeItem('dossier_draft_v1');
-    }
+      success('Proyecto reiniciado');
   };
 
   const openProductDetail = (product: Product) => {
@@ -365,13 +388,19 @@ export default function DossierPage() {
   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleLoadProject = (data: any) => {
-     if (confirm('¿Cargar este proyecto? Se reemplazará el borrador actual.')) {
-        setSections(data.sections || []);
-        setSalesperson(data.salesperson || 'Johalis Montilla');
-        setSalesperson(data.salesperson || 'Johalis Montilla');
-        setIsHistoryModalOpen(false);
-        success('Proyecto cargado exitosamente');
-     }
+     setConfirmationState({
+        isOpen: true,
+        type: 'load',
+        payload: data
+     });
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const confirmLoad = (data: any) => {
+    setSections(data.sections || []);
+    setSalesperson(data.salesperson || 'Johalis Montilla');
+    setIsHistoryModalOpen(false);
+    success('Proyecto cargado exitosamente');
   };
 
   // Add Toast Provider inside is tricky if Page is client but Layout has it.
@@ -491,6 +520,7 @@ export default function DossierPage() {
                         onRemoveSection={removeSection}
                         onUpdateProduct={updateProduct}
                         onRemoveProduct={removeProduct}
+                        onDuplicateProduct={handleDuplicate}
                     />
                 ))}
 
@@ -500,6 +530,7 @@ export default function DossierPage() {
                            product={sections.flatMap(s => s.items).find(i => i.id === activeId)!} 
                            onUpdate={updateProduct} 
                            onRemove={removeProduct} 
+                           onDuplicate={handleDuplicate}
                         />
                     ) : null}
                 </DragOverlay>
@@ -562,6 +593,23 @@ export default function DossierPage() {
         product={viewProduct}
         onClose={() => setIsDetailModalOpen(false)}
         onAddToDossier={handleAddMultiple}
+      />
+
+      <ConfirmationModal 
+        isOpen={confirmationState.isOpen}
+        onClose={() => setConfirmationState(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={() => {
+            if (confirmationState.type === 'reset') confirmReset();
+            if (confirmationState.type === 'load') confirmLoad(confirmationState.payload);
+        }}
+        title={confirmationState.type === 'reset' ? '¿Nuevo Proyecto?' : '¿Cargar Proyecto?'}
+        message={
+            confirmationState.type === 'reset' 
+            ? 'Se borrará el borrador actual y no podrás recuperarlo.' 
+            : 'Se reemplazará el borrador actual con la versión guardada.'
+        }
+        confirmText={confirmationState.type === 'reset' ? 'Reiniciar' : 'Cargar'}
+        isDestructive={confirmationState.type === 'reset'}
       />
 
       <VoiceDealCreator />

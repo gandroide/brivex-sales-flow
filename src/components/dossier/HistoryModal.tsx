@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { X, Clock, Loader2, Save, Download, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/context/ToastContext';
+import SaveOptionsModal from './SaveOptionsModal';
 
 interface HistoryModalProps {
   isOpen: boolean;
@@ -28,6 +29,10 @@ export default function HistoryModal({ isOpen, onClose, onLoad, currentState }: 
   // Save Fields
   const [clientName, setClientName] = useState('');
   const [projectName, setProjectName] = useState('');
+  
+  // Overwrite Logic
+  const [isSaveOptionsOpen, setIsSaveOptionsOpen] = useState(false);
+  const [existingProjectId, setExistingProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -48,15 +53,32 @@ export default function HistoryModal({ isOpen, onClose, onLoad, currentState }: 
     setLoading(false);
   };
 
-  const saveProject = async () => {
+  const checkBeforeSave = async () => {
     if (!clientName || !projectName) {
       toastError('Por favor ingrese Cliente y Proyecto');
       return;
     }
-    
+
+    // Check for existing project with same name/client
+    const { data } = await supabase
+      .from('dossiers')
+      .select('id')
+      .eq('client_name', clientName)
+      .eq('project_name', projectName)
+      .maybeSingle();
+
+    if (data) {
+      setExistingProjectId(data.id);
+      setIsSaveOptionsOpen(true);
+    } else {
+      executeSave(null);
+    }
+  };
+
+  const executeSave = async (overwriteId: string | null) => {
     setSaving(true);
     try {
-      const { error } = await supabase.from('dossiers').insert({
+      const payload = {
         client_name: clientName,
         project_name: projectName,
         salesperson: currentState.salesperson,
@@ -65,15 +87,37 @@ export default function HistoryModal({ isOpen, onClose, onLoad, currentState }: 
             salesperson: currentState.salesperson,
             savedAt: new Date().toISOString()
         }
-      });
+      };
+
+      let error;
+      
+      if (overwriteId) {
+        // Update existing
+        const { error: updateError } = await supabase
+          .from('dossiers')
+          .update(payload)
+          .eq('id', overwriteId);
+        error = updateError;
+      } else {
+        // Insert new
+        const { error: insertError } = await supabase
+          .from('dossiers')
+          .insert(payload);
+        error = insertError;
+      }
 
       if (error) throw error;
       
-      if (error) throw error;
+      success(overwriteId ? 'Proyecto actualizado correctamente' : 'Proyecto guardado exitosamente');
       
-      success('Proyecto guardado exitosamente');
-      setClientName('');
-      setProjectName('');
+      if (!overwriteId) {
+          // If bold new save, clear inputs? Maybe keep them.
+          // setClientName('');
+          // setProjectName('');
+      }
+      
+      setIsSaveOptionsOpen(false);
+      setExistingProjectId(null);
       fetchHistory(); // Refresh list
       
     } catch (error) {
@@ -153,7 +197,7 @@ export default function HistoryModal({ isOpen, onClose, onLoad, currentState }: 
                     />
                 </div>
                 <button 
-                    onClick={saveProject}
+                    onClick={checkBeforeSave}
                     disabled={saving || !clientName || !projectName}
                     className="w-full py-2 bg-luxury-gold text-black font-bold rounded hover:bg-white transition-colors disabled:opacity-50"
                 >
@@ -216,6 +260,17 @@ export default function HistoryModal({ isOpen, onClose, onLoad, currentState }: 
             </div>
 
         </div>
+
+
+        
+        <SaveOptionsModal 
+          isOpen={isSaveOptionsOpen}
+          onClose={() => setIsSaveOptionsOpen(false)}
+          onOverwrite={() => executeSave(existingProjectId)}
+          onSaveNew={() => executeSave(null)}
+          existingProjectName={projectName}
+        />
+
 
       </div>
     </div>

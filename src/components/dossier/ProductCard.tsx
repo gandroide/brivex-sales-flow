@@ -1,5 +1,5 @@
 
-import { Trash2 } from 'lucide-react';
+import { Trash2, Copy } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -20,9 +20,11 @@ interface ProductCardProps {
   product: Product;
   onUpdate: (id: string, field: 'discount' | 'note' | 'features', value: number | string | string[]) => void;
   onRemove: (id: string) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onDuplicate: (product: any) => void;
 }
 
-export default function ProductCard({ product, onUpdate, onRemove }: ProductCardProps) {
+export default function ProductCard({ product, onUpdate, onRemove, onDuplicate }: ProductCardProps) {
   const finalPrice = product.discount 
     ? product.price * (1 - product.discount / 100) 
     : product.price;
@@ -42,12 +44,21 @@ export default function ProductCard({ product, onUpdate, onRemove }: ProductCard
             <span className="text-xs text-luxury-gold uppercase tracking-wider">{product.sku}</span>
             <h3 className="font-bold text-lg">{product.name}</h3>
           </div>
-          <button 
-            onClick={() => onRemove(product.id)}
-            className="text-white/30 hover:text-red-500 transition-colors"
-          >
-            <Trash2 size={20} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button 
+                onClick={() => onDuplicate(product)}
+                className="text-white/30 hover:text-blue-400 transition-colors p-1"
+                title="Duplicar Item"
+            >
+                <Copy size={18} />
+            </button>
+            <button 
+                onClick={() => onRemove(product.id)}
+                className="text-white/30 hover:text-red-500 transition-colors p-1"
+            >
+                <Trash2 size={20} />
+            </button>
+          </div>
         </div>
 
         <div className="flex items-end gap-2 mt-1 mb-3">
