@@ -142,21 +142,20 @@ export default function DossierPage() {
   };
 
   const removeSection = (id: string) => {
-    if (confirm('¿Eliminar sección? Los productos volverán a "Sin Asignar".')) {
-      setSections(prev => {
-        const sectionToRemove = prev.find(s => s.id === id);
-        if (!sectionToRemove) return prev;
+    // Confirmation is now handled in the DroppableSection component
+    setSections(prev => {
+      const sectionToRemove = prev.find(s => s.id === id);
+      if (!sectionToRemove) return prev;
 
-        const remainingSections = prev.filter(s => s.id !== id);
-        // Move items to unassigned
-        return remainingSections.map(s => {
-          if (s.id === 'unassigned') {
-            return { ...s, items: [...s.items, ...sectionToRemove.items] };
-          }
-          return s;
-        });
+      const remainingSections = prev.filter(s => s.id !== id);
+      // Move items to unassigned
+      return remainingSections.map(s => {
+        if (s.id === 'unassigned') {
+          return { ...s, items: [...s.items, ...sectionToRemove.items] };
+        }
+        return s;
       });
-    }
+    });
   };
 
   const renameSection = (id: string, newName: string) => {

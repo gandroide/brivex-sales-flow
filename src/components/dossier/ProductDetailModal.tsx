@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Check, ShoppingBag, Loader2, Camera, Link as LinkIcon, Trash2, Plus, Search } from 'lucide-react';
+import { X, Check, ShoppingBag, Loader2, Camera, Link as LinkIcon, Trash2, Search } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 // Asegúrate de que este componente exista o reemplázalo por un input simple si no
-import ProductSearch from './ProductSearch'; 
+// import ProductSearch from './ProductSearch'; 
 
 interface Product {
   id: string;

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import SortableProductCard from './SortableProductCard';
-import { Edit2, Check, Trash2 } from 'lucide-react';
+import { Edit2, Check, Trash2, X } from 'lucide-react';
 
 interface Product {
     id: string;
@@ -29,6 +29,7 @@ export default function DroppableSection({ section, onRename, onRemoveSection, o
   });
 
   const [isEditing, setIsEditing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [editedName, setEditedName] = useState(section.name);
 
   const handleRename = () => {
@@ -67,9 +68,33 @@ export default function DroppableSection({ section, onRename, onRemoveSection, o
         </div>
         
         {section.id !== 'unassigned' && (
-            <button onClick={() => onRemoveSection(section.id)} className="text-white/20 hover:text-red-500 transition-colors">
-                <Trash2 size={18} />
-            </button>
+            isDeleting ? (
+                <div className="flex items-center gap-3 animate-in fade-in slide-in-from-right-2 duration-200 bg-red-500/10 px-3 py-1.5 rounded-full border border-red-500/20">
+                    <span className="text-red-400 text-xs font-medium">¿Eliminar sección?</span>
+                    <div className="flex items-center gap-2 border-l border-red-500/20 pl-2">
+                        <button 
+                            onClick={() => onRemoveSection(section.id)} 
+                            className="text-red-500 hover:text-red-400 text-xs font-bold uppercase tracking-wider transition-colors"
+                        >
+                            Sí
+                        </button>
+                        <button 
+                            onClick={() => setIsDeleting(false)} 
+                            className="text-white/40 hover:text-white transition-colors"
+                        >
+                            <X size={14} />
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <button 
+                    onClick={() => setIsDeleting(true)} 
+                    className="group flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-white/5 transition-all text-white/20 hover:text-red-400"
+                >
+                    <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden sm:block">Eliminar</span>
+                    <Trash2 size={16} />
+                </button>
+            )
         )}
       </div>
 
