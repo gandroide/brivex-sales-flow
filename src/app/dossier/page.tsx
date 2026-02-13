@@ -24,6 +24,9 @@ interface Product {
   type?: string;
   discount?: number;
   note?: string;
+  features?: string[];
+  tech_drawing_url?: string;
+  origin?: string;
 }
 
 export default function DossierPage() {
@@ -50,7 +53,7 @@ export default function DossierPage() {
     setSelectedProducts(selectedProducts.filter(p => p.id !== id));
   };
 
-  const updateProduct = (id: string, field: 'discount' | 'note', value: number | string) => {
+  const updateProduct = (id: string, field: 'discount' | 'note' | 'features', value: number | string | string[]) => {
     setSelectedProducts(selectedProducts.map(p => 
       p.id === id ? { ...p, [field]: value } : p
     ));
@@ -84,7 +87,7 @@ export default function DossierPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Brivex_Propuesta_${data.clientName || 'Cliente'}_${Date.now()}.pdf`;
+      a.download = `Baccessory_Propuesta_${data.clientName || 'Cliente'}_${Date.now()}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);

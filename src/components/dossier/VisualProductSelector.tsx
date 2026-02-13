@@ -15,6 +15,8 @@ interface Product {
   collection_name?: string;
   finish?: string;
   type?: string;
+  features?: string[];
+  tech_drawing_url?: string;
 }
 
 interface VisualProductSelectorProps {

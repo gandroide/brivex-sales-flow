@@ -15,6 +15,7 @@ interface Product {
   collection_name?: string;
   finish?: string;
   type?: string;
+  tech_drawing_url?: string;
 }
 
 interface ProductDetailModalProps {
@@ -29,6 +30,7 @@ export default function ProductDetailModal({ product: initialProduct, isOpen, on
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingTech, setUploadingTech] = useState(false);
   
   const [selectedSuggestionIds, setSelectedSuggestionIds] = useState<string[]>([]);
 
@@ -98,6 +100,45 @@ export default function ProductDetailModal({ product: initialProduct, isOpen, on
       alert('Error updating image. Please try again.');
     } finally {
       setUploadingImage(false);
+    }
+  };
+
+  const handleTechUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || !product) return;
+    
+    const file = e.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${product.sku}-tech-${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    setUploadingTech(true);
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      const { error: dbError } = await supabase
+        .from('products')
+        .update({ tech_drawing_url: publicUrl })
+        .eq('id', product.id);
+
+      if (dbError) throw dbError;
+
+      setProduct(prev => prev ? ({ ...prev, tech_drawing_url: publicUrl }) : null);
+      alert('Plano técnico actualizado correctamente');
+
+    } catch (error) {
+      console.error('Error uploading tech drawing:', error);
+      alert('Error updating tech drawing.');
+    } finally {
+      setUploadingTech(false);
     }
   };
 
@@ -188,32 +229,77 @@ export default function ProductDetailModal({ product: initialProduct, isOpen, on
           <X size={20} />
         </button>
 
-        {/* Left Column: Main Image */}
-        <div className="w-full md:w-1/2 bg-white p-8 flex items-center justify-center relative group">
-           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img 
-            src={product.image_url} 
-            alt={product.name} 
-            className={`max-h-[60vh] object-contain drop-shadow-xl transition-opacity ${uploadingImage ? 'opacity-50' : 'opacity-100'}`}
-          />
+        {/* Left Column: Images */}
+        <div className="w-full md:w-1/2 bg-white flex flex-col border-r border-gray-100">
            
-           {/* Image Upload Overlay */}
-           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10">
-              <label className="cursor-pointer bg-white/90 hover:bg-white text-black px-4 py-2 rounded-full shadow-lg flex items-center gap-2 font-bold transform hover:scale-105 transition-all">
-                {uploadingImage ? <Loader2 className="animate-spin" size={20} /> : <Camera size={20} />}
-                <span>{uploadingImage ? 'Uploading...' : 'Change Photo'}</span>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  className="hidden" 
-                  disabled={uploadingImage}
-                  onChange={handleImageUpload}
-                />
-              </label>
+           {/* MAIN IMAGE (Upper 70%) */}
+           <div className="relative h-[65%] w-full p-8 flex items-center justify-center group border-b border-gray-100">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src={product.image_url} 
+                alt={product.name} 
+                className={`w-full h-full object-contain drop-shadow-xl transition-opacity ${uploadingImage ? 'opacity-50' : 'opacity-100'}`}
+              />
+               
+              {/* Image Upload Overlay */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10">
+                 <label className="cursor-pointer bg-white/90 hover:bg-white text-black px-4 py-2 rounded-full shadow-lg flex items-center gap-2 font-bold transform hover:scale-105 transition-all">
+                   {uploadingImage ? <Loader2 className="animate-spin" size={20} /> : <Camera size={20} />}
+                   <span>Change Photo</span>
+                   <input 
+                     type="file" 
+                     accept="image/*" 
+                     className="hidden" 
+                     disabled={uploadingImage}
+                     onChange={handleImageUpload}
+                   />
+                 </label>
+              </div>
+
+              <div className="absolute top-4 left-4 bg-black/5 px-3 py-1 rounded text-xs text-black/50 font-mono">
+                 {product.sku}
+              </div>
            </div>
 
-           <div className="absolute bottom-4 left-4 bg-black/5 px-3 py-1 rounded text-xs text-black/50 font-mono">
-              {product.sku}
+           {/* TECH DRAWING (Lower 30%) */}
+           <div className="relative h-[35%] w-full bg-gray-50 flex flex-col items-center justify-center p-4 group">
+              <span className="absolute top-2 left-3 text-[10px] uppercase font-bold text-gray-400 tracking-wider">Dibujo Técnico / Plano</span>
+              
+              {product.tech_drawing_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img 
+                    src={product.tech_drawing_url} 
+                    alt="Technical Drawing" 
+                    className={`h-full w-full object-contain mix-blend-multiply transition-opacity ${uploadingTech ? 'opacity-50' : 'opacity-80'}`}
+                  />
+              ) : (
+                  <div className="flex flex-col items-center gap-2 text-gray-300">
+                      <Loader2 className={`${uploadingTech ? 'animate-spin text-luxury-gold' : ''}`} size={uploadingTech ? 30 : 0} />
+                      {!uploadingTech && (
+                          <>
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg w-16 h-16 flex items-center justify-center">
+                                <span className="text-xs">📐</span>
+                            </div>
+                            <span className="text-xs">Sin plano</span>
+                          </>
+                      )}
+                  </div>
+              )}
+
+              {/* APIRO Upload Overlay for Tech Drawing */}
+              <div className={`absolute inset-0 flex items-center justify-center bg-black/5 transition-opacity ${product.tech_drawing_url ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
+                 <label className="cursor-pointer bg-white hover:bg-gray-50 text-black/80 px-3 py-1.5 rounded-full shadow-sm border border-gray-200 flex items-center gap-2 text-xs font-bold transform hover:scale-105 transition-all">
+                   {uploadingTech ? <Loader2 className="animate-spin" size={14} /> : <Camera size={14} />}
+                   <span>{product.tech_drawing_url ? 'Update Blueprint' : 'Upload Blueprint'}</span>
+                   <input 
+                     type="file" 
+                     accept="image/*" 
+                     className="hidden" 
+                     disabled={uploadingTech}
+                     onChange={handleTechUpload}
+                   />
+                 </label>
+              </div>
            </div>
         </div>
 

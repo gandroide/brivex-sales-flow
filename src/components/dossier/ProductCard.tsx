@@ -13,11 +13,12 @@ interface Product {
   collection_name?: string;
   finish?: string;
   type?: string;
+  features?: string[];
 }
 
 interface ProductCardProps {
   product: Product;
-  onUpdate: (id: string, field: 'discount' | 'note', value: number | string) => void;
+  onUpdate: (id: string, field: 'discount' | 'note' | 'features', value: number | string | string[]) => void;
   onRemove: (id: string) => void;
 }
 
@@ -70,14 +71,56 @@ export default function ProductCard({ product, onUpdate, onRemove }: ProductCard
             />
           </div>
           <div>
-            <label className="text-xs text-white/50 block mb-1">Nota</label>
-            <input 
-              type="text" 
-              className="input-field py-1 px-2 text-sm"
-              placeholder="Ej: Últimas unidades"
-              value={product.note || ''}
-              onChange={(e) => onUpdate(product.id, 'note', e.target.value)}
-            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center">
+               <label className="text-xs text-white/50 block">Características</label>
+            </div>
+            
+            <div className="flex flex-wrap gap-1 mb-2">
+               {product.features?.map((feat, idx) => (
+                 <span key={idx} className="bg-white/10 text-[10px] px-2 py-1 rounded text-white flex items-center gap-1">
+                   {feat}
+                   <button onClick={() => {
+                      const newFeatures = product.features?.filter((_, i) => i !== idx) || [];
+                      onUpdate(product.id, 'features', newFeatures);
+                   }} className="hover:text-red-400"><Trash2 size={10} /></button>
+                 </span>
+               ))}
+            </div>
+
+            <div className="flex gap-1">
+               <input 
+                 type="text" 
+                 id={`feature-input-${product.id}`}
+                 className="input-field py-1 px-2 text-xs flex-grow"
+                 placeholder="Add feature (e.g. SoftClose)"
+                 onKeyDown={(e) => {
+                   if (e.key === 'Enter') {
+                     const val = e.currentTarget.value.trim();
+                     if (val) {
+                       const newFeatures = [...(product.features || []), val];
+                       onUpdate(product.id, 'features', newFeatures);
+                       e.currentTarget.value = '';
+                     }
+                   }
+                 }}
+               />
+               <button 
+                  onClick={() => {
+                    const input = document.getElementById(`feature-input-${product.id}`) as HTMLInputElement;
+                    const val = input.value.trim();
+                     if (val) {
+                       const newFeatures = [...(product.features || []), val];
+                       onUpdate(product.id, 'features', newFeatures);
+                       input.value = '';
+                     }
+                  }}
+                  className="bg-white/10 hover:bg-white/20 px-2 rounded text-xs"
+               >
+                 +
+               </button>
+            </div>
           </div>
         </div>
       </div>
