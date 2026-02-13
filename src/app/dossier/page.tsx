@@ -1,6 +1,6 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   DndContext, 
   closestCenter, 
@@ -22,10 +22,12 @@ import VoiceDealCreator from '@/components/pipedrive/VoiceDealCreator';
 import ProductCard from '@/components/dossier/ProductCard'; // Keep for Overlay
 import DroppableSection from '@/components/dossier/DroppableSection';
 import DossierConfigModal from '@/components/dossier/DossierConfigModal';
+import HistoryModal from '../../components/dossier/HistoryModal'; // Relative Import Fix
 import VisualProductSelector from '@/components/dossier/VisualProductSelector';
 import ProductDetailModal from '@/components/dossier/ProductDetailModal';
-import { FileText, ArrowLeft, ShoppingBag, Plus, User, Edit2, X } from 'lucide-react';
+import { FileText, ArrowLeft, ShoppingBag, Plus, User, Edit2, X, Trash2, Clock } from 'lucide-react';
 import Link from 'next/link';
+import { useToast } from '@/context/ToastContext'; // Import Toast
 
 // Unified Product Interface
 interface Product {
@@ -59,9 +61,12 @@ export default function DossierPage() {
   ]);
   const [salesperson, setSalesperson] = useState('Johalis Montilla');
   const [activeId, setActiveId] = useState<string | null>(null); // For DragOverlay
+  const { success, error: toastError } = useToast(); // Use Toast
 
   const [generating, setGenerating] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false); // New
+  const [isLoaded, setIsLoaded] = useState(false); // Prevent save before load
   
   // New State for Visual Selection
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
@@ -70,6 +75,35 @@ export default function DossierPage() {
   // Custom Add Section State
   const [isAddingSection, setIsAddingSection] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
+
+  // --- AUTO-SAVE LOGIC ---
+  // 1. Load from LocalStorage on Mount
+  useEffect(() => {
+    const saved = localStorage.getItem('dossier_draft_v1');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.sections) setSections(parsed.sections);
+        if (parsed.salesperson) setSalesperson(parsed.salesperson);
+      } catch (e) {
+        console.error("Failed to load draft", e);
+      }
+    }
+    setIsLoaded(true);
+  }, [isLoaded]);
+
+  // 2. Save to LocalStorage on Change
+  useEffect(() => {
+    if (!isLoaded) return; // Don't save until loaded
+
+    const draft = {
+      sections,
+      salesperson,
+      lastModified: Date.now()
+    };
+    localStorage.setItem('dossier_draft_v1', JSON.stringify(draft));
+  }, [sections, salesperson]);
+
 
   // --- DND SENSORS ---
   const sensors = useSensors(
@@ -310,9 +344,17 @@ export default function DossierPage() {
       
     } catch (error) {
       console.error(error);
-      alert('Error al generar el dossier. Intente nuevamente.');
+      toastError('Error al generar el dossier. Intente nuevamente.');
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleReset = () => {
+    if (confirm('¿Estás seguro de comenzar un nuevo proyecto? Se borrará el borrador actual.')) {
+      setSections([{ id: 'unassigned', name: 'Sin Asignar', items: [] }]);
+      setSalesperson('Johalis Montilla');
+      localStorage.removeItem('dossier_draft_v1');
     }
   };
 
@@ -320,6 +362,20 @@ export default function DossierPage() {
     setViewProduct(product);
     setIsDetailModalOpen(true);
   };
+  
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleLoadProject = (data: any) => {
+     if (confirm('¿Cargar este proyecto? Se reemplazará el borrador actual.')) {
+        setSections(data.sections || []);
+        setSalesperson(data.salesperson || 'Johalis Montilla');
+        setSalesperson(data.salesperson || 'Johalis Montilla');
+        setIsHistoryModalOpen(false);
+        success('Proyecto cargado exitosamente');
+     }
+  };
+
+  // Add Toast Provider inside is tricky if Page is client but Layout has it.
+  // Layout has it, so we can just use hook.
 
   return (
     <div className="min-h-screen pb-32 bg-luxury-black">
@@ -348,6 +404,21 @@ export default function DossierPage() {
           </div>
           
           <div className="flex items-center gap-2">
+             <button 
+                onClick={handleReset}
+                className="p-2 text-white/40 hover:text-red-500 transition-colors"
+                title="Nuevo Proyecto (Borrar Borrador)"
+             >
+                <Trash2 size={18} />
+             </button>
+             
+             <button 
+                onClick={() => setIsHistoryModalOpen(true)}
+                className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-full text-white/60 text-xs hover:bg-white/10 hover:text-white transition-colors flex items-center gap-2"
+             >
+                <Clock size={14} /> Historial
+             </button>
+
              <div className="bg-luxury-gold/10 px-4 py-2 rounded-full border border-luxury-gold/20 flex items-center gap-2">
                 <ShoppingBag size={16} className="text-luxury-gold" />
                 <span className="text-luxury-gold font-bold">
@@ -477,6 +548,13 @@ export default function DossierPage() {
         onClose={() => setIsConfigModalOpen(false)}
         onConfirm={generateDossier}
         isGenerating={generating}
+      />
+
+      <HistoryModal 
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        onLoad={handleLoadProject}
+        currentState={{ sections, salesperson }}
       />
 
       <ProductDetailModal 

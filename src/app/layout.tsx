@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   description: 'Herramienta de Automatización de Ventas de Lujo',
 };
 
+import { ToastProvider } from '@/context/ToastContext';
+
 export default function RootLayout({
   children,
 }: {
@@ -18,12 +20,14 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`${inter.variable} font-sans min-h-screen flex flex-col antialiased bg-luxury-black text-luxury-white`}>
-        <main className="flex-grow container mx-auto px-4 py-8">
-          {children}
-        </main>
-        <footer className="text-center py-6 text-white/20 text-sm">
-          Brivex - Ontiveros & Montilla © 2026
-        </footer>
+        <ToastProvider>
+          <main className="flex-grow container mx-auto px-4 py-8">
+            {children}
+          </main>
+          <footer className="text-center py-6 text-white/20 text-sm">
+            Brivex - Ontiveros & Montilla © 2026
+          </footer>
+        </ToastProvider>
       </body>
     </html>
   );
