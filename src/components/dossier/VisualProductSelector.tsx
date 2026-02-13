@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Filter, Search, Loader2 } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
 
 interface Product {
   id: string;

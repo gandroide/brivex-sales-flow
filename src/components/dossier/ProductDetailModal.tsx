@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Check, ShoppingBag, ArrowRight, Loader2, Camera } from 'lucide-react';
+import { X, Check, ShoppingBag, Loader2, Camera } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 interface Product {
@@ -282,9 +282,16 @@ export default function ProductDetailModal({ product: initialProduct, isOpen, on
 
                      <div className={`aspect-square bg-white rounded-lg p-2 flex items-center justify-center mb-1 overflow-hidden transition-all ${isSelected ? 'ring-2 ring-luxury-gold' : ''}`}>
                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                       <img src={sugg.image_url} className="w-full h-full object-contain group-hover:scale-110 transition-transform" />
-                     </div>
-                     <p className="text-[10px] truncate opacity-70">{sugg.name}</p>
+                       <img 
+                        src={sugg.image_url} 
+                        className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform"
+                        alt={sugg.name}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-sm text-white group-hover:text-luxury-gold transition-colors">{sugg.name}</h4>
+                      <p className="text-xs text-white/50">{sugg.brand} • {sugg.collection_name}</p>
+                   </div>
                    </div>
                    );
                  })}

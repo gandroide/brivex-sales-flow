@@ -15,7 +15,7 @@ interface DealData {
 const PIPEDRIVE_API_URL = process.env.PIPEDRIVE_API_URL || 'https://api.pipedrive.com/v1';
 const API_KEY = process.env.PIPEDRIVE_API_KEY;
 
-async function fetchPipedrive(endpoint: string, method = 'GET', body?: any) {
+async function fetchPipedrive(endpoint: string, method = 'GET', body?: Record<string, unknown>) {
   const url = `${PIPEDRIVE_API_URL}${endpoint}?api_token=${API_KEY}`;
   const options: RequestInit = {
     method,
@@ -138,8 +138,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, deal });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Voice Deal Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

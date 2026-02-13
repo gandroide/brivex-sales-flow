@@ -35,10 +35,7 @@ export default function DossierPage() {
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
-  const addProduct = (product: Product) => {
-    if (selectedProducts.find(p => p.id === product.id)) return;
-    setSelectedProducts(prev => [...prev, { ...product, discount: 0 }]);
-  };
+
 
   const handleAddMultiple = (productsToAdd: Product[]) => {
     const newProducts = productsToAdd.filter(p => !selectedProducts.find(sp => sp.id === p.id));

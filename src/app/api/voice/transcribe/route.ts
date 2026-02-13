@@ -68,16 +68,17 @@ export async function POST(req: NextRequest) {
     let data;
     try {
         data = JSON.parse(cleanJson);
-    } catch (e) {
+    } catch {
         // Si falla el JSON, devolvemos el texto plano en 'note_content'
         data = { note_content: text, title: "Nota de Voz (Sin procesar)", value: 0 };
     }
 
     return NextResponse.json(data);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Transcription Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to process audio';
     // Devolvemos el mensaje real del error para que sepas qué pasó
-    return NextResponse.json({ error: error.message || 'Failed to process audio' }, { status: 500 });
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

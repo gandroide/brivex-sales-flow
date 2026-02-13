@@ -62,10 +62,11 @@ export default function VoiceDealCreator() {
 
       setStatus('success');
       setTimeout(() => setStatus('idle'), 3000); // Reset after 3 seconds
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error processing voice note:', err);
       setStatus('error');
-      setErrorMessage(err.message || 'Error processing request.');
+      const msg = err instanceof Error ? err.message : 'Error processing request.';
+      setErrorMessage(msg);
     }
   };
 
