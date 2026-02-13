@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Check, ShoppingBag, Loader2, Camera, Link as LinkIcon, Trash2, Search } from 'lucide-react';
+import { X, Check, ShoppingBag, Loader2, Camera, Link as LinkIcon, Trash2, Search, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-// Asegúrate de que este componente exista o reemplázalo por un input simple si no
-// import ProductSearch from './ProductSearch'; 
+// Importa o define ProductSearch si lo usas, si no, lo hemos reemplazado con lógica interna.
 
 interface Product {
   id: string;
@@ -477,13 +476,13 @@ export default function ProductDetailModal({ product: initialProduct, isOpen, on
 
                {/* Manual Link Search Bar */}
                {showSearch && (
-                  <div className="mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200 animate-in fade-in slide-in-from-top-2">
+                  <div className="mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200 animate-in fade-in slide-in-from-top-2 relative">
                       <div className="relative">
                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                           <input 
                             type="text"
                             placeholder="Buscar producto por nombre o SKU..."
-                            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-luxury-gold focus:border-transparent"
+                            className="w-full pl-9 pr-4 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-luxury-gold focus:border-transparent placeholder:text-gray-400"
                             value={searchTerm}
                             onChange={(e) => {
                                 setSearchTerm(e.target.value);
@@ -493,17 +492,22 @@ export default function ProductDetailModal({ product: initialProduct, isOpen, on
                           {searchingLink && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-gray-400" size={16} />}
                       </div>
                       
-                      {/* Search Results */}
+                      {/* Search Results - FIX APPLIED HERE */}
                       {searchResults.length > 0 && (
-                          <div className="mt-2 bg-white rounded-md shadow-lg border border-gray-100 max-h-40 overflow-y-auto">
+                          <div className="absolute z-50 w-full mt-2 left-0 bg-white rounded-lg shadow-xl border border-gray-200 max-h-60 overflow-y-auto">
                               {searchResults.map(res => (
                                   <button
                                     key={res.id}
                                     onClick={() => linkProduct(res)}
-                                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center justify-between group"
+                                    className="w-full text-left p-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 flex items-center justify-between cursor-pointer group transition-colors"
                                   >
-                                      <span className="truncate flex-1">{res.name}</span>
-                                      <span className="text-xs text-gray-400 ml-2 group-hover:text-luxury-gold">Vincular +</span>
+                                      <div>
+                                          <p className="text-sm font-bold text-gray-900 line-clamp-1">{res.name}</p>
+                                          <p className="text-xs text-gray-500 mt-0.5">{res.sku} • {res.brand}</p>
+                                      </div>
+                                      <span className="text-xs text-white bg-luxury-gold px-2 py-1 rounded font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap ml-2">
+                                          VINCULAR +
+                                      </span>
                                   </button>
                               ))}
                           </div>
@@ -533,17 +537,17 @@ export default function ProductDetailModal({ product: initialProduct, isOpen, on
                          {isManual && (
                              <div className="absolute top-1 left-1 z-20">
                                  <div 
-                                    className="bg-blue-100 text-blue-600 p-1 rounded-full shadow-sm group-hover:hidden"
+                                    className="bg-blue-50 text-blue-600 p-1 rounded-full shadow-sm group-hover:hidden border border-blue-100"
                                     title="Producto Vinculado Manualmente"
                                  >
-                                    <LinkIcon size={10} />
+                                    <LinkIcon size={12} />
                                  </div>
                                  <button
                                    onClick={(e) => {
                                        e.stopPropagation();
                                        if(confirm('¿Desvincular este producto del look?')) unlinkProduct(sugg.id);
                                    }}
-                                   className="bg-red-100 hover:bg-red-500 text-red-600 hover:text-white p-1 rounded-full hidden group-hover:block transition-colors shadow-sm"
+                                   className="bg-white hover:bg-red-50 text-red-500 hover:text-red-600 p-1.5 rounded-full hidden group-hover:flex items-center justify-center transition-colors shadow-sm border border-gray-200"
                                    title="Desvincular"
                                  >
                                      <Trash2 size={12} />
