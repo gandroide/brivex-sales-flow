@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Check, ShoppingBag, Loader2, Camera, Link as LinkIcon, Trash2, Search, Plus } from 'lucide-react';
+import { X, Check, ShoppingBag, Loader2, Camera, Link as LinkIcon, Trash2, Search  } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 // Importa o define ProductSearch si lo usas, si no, lo hemos reemplazado con lógica interna.
 
