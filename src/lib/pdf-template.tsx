@@ -638,18 +638,23 @@ const groupProductsByType = (products: Product[]) => {
   }, {} as Record<string, Product[]>);
 };
 
+interface Section {
+  id: string;
+  name: string;
+  items: Product[];
+}
+
 interface DossierProps {
-  products: Product[];
+  sections: Section[];
+  salesperson?: string;
   clientName: string;
   projectName?: string;
   date?: string;
 }
 
-const DossierTemplate: React.FC<DossierProps> = ({ products, clientName, projectName, date }) => {
+const DossierTemplate: React.FC<DossierProps> = ({ sections, salesperson, clientName, projectName, date }) => {
   
-  // 1. Agrupar los productos antes de renderizar
-  const groupedProducts = groupProductsByType(products);
-  const categories = Object.keys(groupedProducts);
+
 
   return (
     <Document>
@@ -661,30 +666,41 @@ const DossierTemplate: React.FC<DossierProps> = ({ products, clientName, project
            <View style={{width: 80, height: 3, backgroundColor: COLORS.accentGold, marginVertical: 20}} />
            <Text style={styles.coverSubtitle}>BACCESSORY</Text>
         </View>
-        <View style={styles.coverFooter}>
+         <View style={styles.coverFooter}>
             <Text style={{color: '#888', fontSize: 10, marginBottom: 5}}>PREPARADO PARA</Text>
             <Text style={{color: COLORS.white, fontSize: 16, letterSpacing: 2}}>{clientName || 'CLIENTE VIP'}</Text>
-            <Text style={{color: COLORS.accentGold, fontSize: 10, marginTop: 10}}>{date || new Date().toLocaleDateString()}</Text>
+            
+            <Text style={{color: COLORS.accentGold, fontSize: 10, marginTop: 15, textTransform: 'uppercase', letterSpacing: 2}}>
+                {salesperson || 'JOHALIS MONTILLA'} • SALES EXECUTIVE
+            </Text>
+
+            <Text style={{color: '#666', fontSize: 10, marginTop: 5}}>{date || new Date().toLocaleDateString()}</Text>
         </View>
       </Page>
 
-      {/* --- BUCLE PRINCIPAL: ITERAR POR CATEGORÍAS --- */}
-      {categories.map((category, catIndex) => (
-        <React.Fragment key={catIndex}>
+      {/* --- BUCLE PRINCIPAL: ITERAR POR SECCIONES (ROOMS) --- */}
+      {sections.map((section, sectionIndex) => {
+        // Group products within this section
+        const groupedProducts = groupProductsByType(section.items);
+        const categories = Object.keys(groupedProducts);
+
+        return (
+        <React.Fragment key={sectionIndex}>
           
-          {/* A. PORTADA DE SECCIÓN (SOLO SI HAY MÁS DE 1 CATEGORÍA O SIEMPRE, SEGÚN GUSTO) */}
+          {/* A. PORTADA DE SECCIÓN (ROOM COVER) */}
           <Page size="A4" orientation="landscape" style={styles.sectionCoverPage}>
-             <Text style={styles.sectionTitle}>{category}</Text>
-             <Text style={styles.sectionSubtitle}>SELECCIÓN EXCLUSIVA</Text>
+             <Text style={styles.sectionTitle}>{section.name}</Text>
+             <Text style={styles.sectionSubtitle}>{section.items.length} PRODUCTOS SELECCIONADOS</Text>
           </Page>
 
-          {/* B. PRODUCTOS DENTRO DE ESA CATEGORÍA */}
-          {groupedProducts[category].map((product: Product, prodIndex: number) => (
-            <Page key={`${catIndex}-${prodIndex}`} size="A4" orientation="landscape" style={styles.page}>
+          {/* B. PRODUCTOS DENTRO DE ESA SECCIÓN (AGRUPADOS POR TIPO) */}
+          {categories.map((category) => (
+             groupedProducts[category].map((product: Product, prodIndex: number) => (
+            <Page key={`${sectionIndex}-${category}-${prodIndex}`} size="A4" orientation="landscape" style={styles.page}>
               
               {/* TOP BAR */}
               <View style={styles.topBar}>
-                <Text style={styles.topBarLogo}>BACCESSORY</Text>
+                <Text style={styles.topBarLogo}>BACCESSORY • {section.name}</Text>
                 <View style={styles.topBarInfo}>
                     <Text style={styles.topBarText}>{product.brand}</Text>
                     {product.collection_name && (
@@ -761,9 +777,11 @@ const DossierTemplate: React.FC<DossierProps> = ({ products, clientName, project
               </View>
 
             </Page>
+          ))
           ))}
         </React.Fragment>
-      ))}
+        );
+      })}
     </Document>
   );
 };

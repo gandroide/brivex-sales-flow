@@ -346,12 +346,26 @@ export default function ProductDetailModal({ product: initialProduct, isOpen, on
                  <ShoppingBag size={80} />
                </div>
                
-               <h3 className="text-luxury-gold font-bold mb-3 flex items-center gap-2">
-                 <span className="w-2 h-2 rounded-full bg-luxury-gold animate-pulse"></span>
-                 Completa el Look
-               </h3>
+               <div className="flex justify-between items-center mb-3">
+                 <h3 className="text-luxury-gold font-bold flex items-center gap-2">
+                   <span className="w-2 h-2 rounded-full bg-luxury-gold animate-pulse"></span>
+                   Completa el Look
+                 </h3>
+                 <button 
+                    onClick={() => {
+                        if (selectedSuggestionIds.length === suggestions.length) {
+                            setSelectedSuggestionIds([]);
+                        } else {
+                            setSelectedSuggestionIds(suggestions.map(s => s.id));
+                        }
+                    }}
+                    className="text-xs text-luxury-gold hover:text-white underline"
+                 >
+                    {selectedSuggestionIds.length === suggestions.length ? 'Deselect All' : 'Select All'}
+                 </button>
+               </div>
                
-               <div className="grid grid-cols-3 gap-3 mb-4">
+               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-4 max-h-[300px] overflow-y-auto">
                  {suggestions.map(sugg => {
                    const isSelected = selectedSuggestionIds.includes(sugg.id);
                    return (

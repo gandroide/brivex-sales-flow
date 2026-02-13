@@ -1,13 +1,30 @@
 
 'use client';
 import { useState } from 'react';
+import { 
+  DndContext, 
+  closestCenter, 
+  KeyboardSensor, 
+  PointerSensor, 
+  useSensor, 
+  useSensors, 
+  DragOverlay,
+  DragStartEvent,
+  DragOverEvent,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import { 
+  arrayMove, 
+  sortableKeyboardCoordinates, 
+} from '@dnd-kit/sortable';
 
 import VoiceDealCreator from '@/components/pipedrive/VoiceDealCreator';
-import ProductCard from '@/components/dossier/ProductCard';
+import ProductCard from '@/components/dossier/ProductCard'; // Keep for Overlay
+import DroppableSection from '@/components/dossier/DroppableSection';
 import DossierConfigModal from '@/components/dossier/DossierConfigModal';
 import VisualProductSelector from '@/components/dossier/VisualProductSelector';
 import ProductDetailModal from '@/components/dossier/ProductDetailModal';
-import { FileText, ArrowLeft, ShoppingBag } from 'lucide-react';
+import { FileText, ArrowLeft, ShoppingBag, Plus, User, Edit2 } from 'lucide-react';
 import Link from 'next/link';
 
 // Unified Product Interface
@@ -29,8 +46,20 @@ interface Product {
   origin?: string;
 }
 
+interface Section {
+  id: string;
+  name: string;
+  items: Product[];
+}
+
 export default function DossierPage() {
-  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
+  // --- STATE ---
+  const [sections, setSections] = useState<Section[]>([
+    { id: 'unassigned', name: 'Sin Asignar', items: [] },
+  ]);
+  const [salesperson, setSalesperson] = useState('Johalis Montilla');
+  const [activeId, setActiveId] = useState<string | null>(null); // For DragOverlay
+
   const [generating, setGenerating] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   
@@ -38,29 +67,203 @@ export default function DossierPage() {
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
+  // --- DND SENSORS ---
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px movement before drag starts
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+      keyboardCodes: {
+        start: ['Enter'],
+        cancel: ['Escape'],
+        end: ['Enter'],
+      },
+    })
+  );
 
+  // --- ACTIONS ---
 
   const handleAddMultiple = (productsToAdd: Product[]) => {
-    const newProducts = productsToAdd.filter(p => !selectedProducts.find(sp => sp.id === p.id));
+    // Filter out duplicates globally
+    const allExistingIds = sections.flatMap(s => s.items.map(i => i.id));
+    const newProducts = productsToAdd.filter(p => !allExistingIds.includes(p.id));
     
     if (newProducts.length > 0) {
       const productsWithDiscount = newProducts.map(p => ({ ...p, discount: 0 }));
-      setSelectedProducts(prev => [...prev, ...productsWithDiscount]);
+      
+      setSections(prev => prev.map(section => {
+        if (section.id === 'unassigned') {
+          return { ...section, items: [...section.items, ...productsWithDiscount] };
+        }
+        return section;
+      }));
     }
   };
 
   const removeProduct = (id: string) => {
-    setSelectedProducts(selectedProducts.filter(p => p.id !== id));
+    setSections(prev => prev.map(section => ({
+      ...section,
+      items: section.items.filter(p => p.id !== id)
+    })));
   };
 
   const updateProduct = (id: string, field: 'discount' | 'note' | 'features', value: number | string | string[]) => {
-    setSelectedProducts(selectedProducts.map(p => 
-      p.id === id ? { ...p, [field]: value } : p
-    ));
+    setSections(prev => prev.map(section => ({
+      ...section,
+      items: section.items.map(p => p.id === id ? { ...p, [field]: value } : p)
+    })));
   };
 
+  // --- SECTION MANAGEMENT ---
+
+  const addSection = () => {
+    const name = prompt('Nombre de la nueva sección (ej. Baño Principal):');
+    if (name) {
+      const newSection: Section = {
+        id: `section-${Date.now()}`,
+        name,
+        items: []
+      };
+      setSections(prev => [...prev, newSection]);
+    }
+  };
+
+  const removeSection = (id: string) => {
+    if (confirm('¿Eliminar sección? Los productos volverán a "Sin Asignar".')) {
+      setSections(prev => {
+        const sectionToRemove = prev.find(s => s.id === id);
+        if (!sectionToRemove) return prev;
+
+        const remainingSections = prev.filter(s => s.id !== id);
+        // Move items to unassigned
+        return remainingSections.map(s => {
+          if (s.id === 'unassigned') {
+            return { ...s, items: [...s.items, ...sectionToRemove.items] };
+          }
+          return s;
+        });
+      });
+    }
+  };
+
+  const renameSection = (id: string, newName: string) => {
+    setSections(prev => prev.map(s => s.id === id ? { ...s, name: newName } : s));
+  };
+
+
+  // --- DRAG AND DROP HANDLERS ---
+
+  const findSectionContainer = (id: string): string | undefined => {
+    if (sections.find(s => s.id === id)) return id; // It's a section
+    return sections.find(s => s.items.find(i => i.id === id))?.id; // It's an item
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    const overId = over?.id;
+
+    if (!overId || active.id === overId) return;
+
+    const activeContainer = findSectionContainer(String(active.id));
+    const overContainer = findSectionContainer(String(overId));
+
+    if (!activeContainer || !overContainer || activeContainer === overContainer) {
+      return;
+    }
+
+    setSections((prev) => {
+      const activeItems = prev.find(s => s.id === activeContainer)?.items || [];
+      const overItems = prev.find(s => s.id === overContainer)?.items || [];
+      
+      const activeIndex = activeItems.findIndex(i => i.id === active.id);
+      const overIndex = overItems.findIndex(i => i.id === overId);
+
+      let newIndex;
+      if (sections.find(s => s.id === overId)) {
+        // We're over a container
+        newIndex = overItems.length + 1;
+      } else {
+        const isBelowOverItem =
+          over &&
+          active.rect.current.translated &&
+          active.rect.current.translated.top >
+            over.rect.top + over.rect.height;
+
+        const modifier = isBelowOverItem ? 1 : 0;
+        newIndex = overIndex >= 0 ? overIndex + modifier : overItems.length + 1;
+      }
+
+      return prev.map(section => {
+        if (section.id === activeContainer) {
+          return {
+            ...section,
+            items: section.items.filter(item => item.id !== active.id)
+          };
+        }
+        if (section.id === overContainer) {
+           const newItems = [...section.items];
+           // Effectively moving the item to the new container at calculated index
+           // Note: In dragOver we just move it to the list. 
+           // Real reordering happens in dragEnd for same container, or here for different.
+           // Simplified: Just add to target, remove from source.
+           // However, to permit accurate "insertion" preview, we need arrayMove logic if we were using a single flat list.
+           // Since we have multiple lists, we manually splice.
+           
+           const itemToMove = activeItems[activeIndex];
+           newItems.splice(newIndex, 0, itemToMove);
+           
+           return {
+             ...section,
+             items: newItems
+           };
+        }
+        return section;
+      });
+    });
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    const activeContainer = findSectionContainer(String(active.id));
+    const overContainer = over ? findSectionContainer(String(over.id)) : undefined;
+
+    if (
+      activeContainer &&
+      overContainer &&
+      activeContainer === overContainer
+    ) {
+      const sectionIndex = sections.findIndex(s => s.id === activeContainer);
+      const items = sections[sectionIndex].items;
+      const activeIndex = items.findIndex(i => i.id === active.id);
+      const overIndex = items.findIndex(i => i.id === over!.id);
+
+      if (activeIndex !== overIndex) {
+        setSections((prev) => {
+           const newSections = [...prev];
+           newSections[sectionIndex] = {
+             ...newSections[sectionIndex],
+             items: arrayMove(items, activeIndex, overIndex)
+           };
+           return newSections;
+        });
+      }
+    }
+
+    setActiveId(null);
+  };
+
+
   const handleGenerateClick = () => {
-    if (selectedProducts.length === 0) return;
+    // Check if any section has items
+    const hasItems = sections.some(s => s.items.length > 0);
+    if (!hasItems) return;
     setIsConfigModalOpen(true);
   };
 
@@ -74,7 +277,8 @@ export default function DossierPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          products: selectedProducts,
+          sections, // Changed from products
+          salesperson, // New Field
           clientName: data.clientName,
           projectName: data.projectName,
           date: data.date
@@ -119,14 +323,27 @@ export default function DossierPage() {
             </Link>
             <div>
               <h1 className="text-2xl font-bold text-white">Generador de Dossier</h1>
-              <p className="text-white/50 text-xs">Colección Premium & Arquitectura</p>
+              <div className="flex items-center gap-2 text-white/50 text-xs">
+                <span>Vendedor:</span>
+                <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded hover:bg-white/10 transition-colors">
+                    <User size={10} />
+                    <input 
+                        className="bg-transparent border-none outline-none text-white w-24" 
+                        value={salesperson}
+                        onChange={(e) => setSalesperson(e.target.value)}
+                    />
+                    <Edit2 size={8} className="opacity-50" />
+                </div>
+              </div>
             </div>
           </div>
           
           <div className="flex items-center gap-2">
              <div className="bg-luxury-gold/10 px-4 py-2 rounded-full border border-luxury-gold/20 flex items-center gap-2">
                 <ShoppingBag size={16} className="text-luxury-gold" />
-                <span className="text-luxury-gold font-bold">{selectedProducts.length} Items</span>
+                <span className="text-luxury-gold font-bold">
+                    {sections.reduce((acc, s) => acc + s.items.length, 0)} Items
+                </span>
              </div>
           </div>
         </div>
@@ -134,22 +351,47 @@ export default function DossierPage() {
 
       <div className="max-w-6xl mx-auto px-4">
         
-        {/* --- SELECTED PRODUCTS SUMMARY (If any) --- */}
-        {selectedProducts.length > 0 && (
-          <div className="mb-12">
-            <h2 className="text-white/40 text-sm uppercase tracking-wider font-bold mb-4">Productos Seleccionados</h2>
-            <div className="space-y-4">
-              {selectedProducts.map(product => (
-                <ProductCard 
-                  key={product.id} 
-                  product={product} 
-                  onUpdate={updateProduct} 
-                  onRemove={removeProduct} 
-                />
-              ))}
+        {/* --- DND ZONES (SECTIONS) --- */}
+        <div className="mb-12">
+            <div className="flex justify-between items-end mb-6">
+                <h2 className="text-white/40 text-sm uppercase tracking-wider font-bold">Organización por Ambientes</h2>
+                <button 
+                    onClick={addSection}
+                    className="flex items-center gap-2 text-luxury-gold hover:text-white transition-colors text-sm"
+                >
+                    <Plus size={16} /> Agregar Ambiente
+                </button>
             </div>
-          </div>
-        )}
+
+            <DndContext 
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+            >
+                {sections.map(section => (
+                    <DroppableSection 
+                        key={section.id} 
+                        section={section}
+                        onRename={renameSection}
+                        onRemoveSection={removeSection}
+                        onUpdateProduct={updateProduct}
+                        onRemoveProduct={removeProduct}
+                    />
+                ))}
+
+                <DragOverlay>
+                    {activeId ? (
+                        <ProductCard 
+                           product={sections.flatMap(s => s.items).find(i => i.id === activeId)!} 
+                           onUpdate={updateProduct} 
+                           onRemove={removeProduct} 
+                        />
+                    ) : null}
+                </DragOverlay>
+            </DndContext>
+        </div>
 
        {/* --- MAIN SHOPPING AREA --- */}
         <div className="space-y-6">
@@ -169,12 +411,14 @@ export default function DossierPage() {
           <div>
             <span className="text-white/50 text-xs uppercase tracking-wider">Total Dossier</span>
             <p className="text-2xl font-bold text-white">
-               ${selectedProducts.reduce((sum, p) => sum + (p.price * (1 - (p.discount || 0)/100)), 0).toFixed(2)}
+               ${sections.reduce((total, section) => 
+                  total + section.items.reduce((sum, p) => sum + (p.price * (1 - (p.discount || 0)/100)), 0), 0
+               ).toFixed(2)}
             </p>
           </div>
           
           <button 
-            disabled={selectedProducts.length === 0 || generating}
+            disabled={sections.every(s => s.items.length === 0) || generating}
             onClick={handleGenerateClick}
             className="btn-primary px-8 py-3 rounded-full flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all text-black font-bold"
             style={{background: 'linear-gradient(135deg, #C9A84C 0%, #F5D061 100%)'}}

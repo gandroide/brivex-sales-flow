@@ -68,6 +68,7 @@ export default function ProductCard({ product, onUpdate, onRemove }: ProductCard
               placeholder="0"
               value={product.discount || ''}
               onChange={(e) => onUpdate(product.id, 'discount', Number(e.target.value))}
+              onPointerDown={(e) => e.stopPropagation()}
             />
           </div>
           <div>
@@ -95,6 +96,7 @@ export default function ProductCard({ product, onUpdate, onRemove }: ProductCard
                  id={`feature-input-${product.id}`}
                  className="input-field py-1 px-2 text-xs flex-grow"
                  placeholder="Add feature (e.g. SoftClose)"
+                 onPointerDown={(e) => e.stopPropagation()}
                  onKeyDown={(e) => {
                    if (e.key === 'Enter') {
                      const val = e.currentTarget.value.trim();
