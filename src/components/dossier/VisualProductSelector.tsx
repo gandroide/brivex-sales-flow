@@ -95,27 +95,27 @@ export default function VisualProductSelector({ onSelectProduct }: VisualProduct
   return (
     <div className="w-full">
       {/* --- FILTER BAR --- */}
-      <div className="bg-white/5 border-b border-white/10 p-4 sticky top-0 z-30 backdrop-blur-md">
+      <div className="bg-[#050505]/90 border-b border-white/5 p-3 sticky top-0 z-30 backdrop-blur-xl shadow-lg">
          
-         <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-4">
+         <div className="flex flex-col md:flex-row gap-3 justify-between items-center mb-2">
             <div className="relative w-full md:w-64">
                <input 
                  type="text" 
-                 placeholder="Search products..." 
-                 className="w-full bg-black/20 border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-luxury-gold"
+                 placeholder="Search by SKU or Name..." 
+                 className="w-full bg-white/5 border border-white/10 rounded-full py-1.5 pl-9 pr-4 text-xs focus:outline-none focus:border-luxury-gold text-white/90 placeholder:text-white/20"
                  value={searchQuery}
                  onChange={(e) => setSearchQuery(e.target.value)}
                />
-               <Search className="absolute left-3 top-2.5 text-white/30" size={16} />
+               <Search className="absolute left-3 top-2 text-white/30" size={14} />
             </div>
             
-            <div className="flex gap-2 text-xs text-white/50">
-               <span>{filteredProducts.length} Products Found</span>
+            <div className="flex gap-2 text-[10px] text-white/30 uppercase tracking-widest">
+               <span>{filteredProducts.length} Items</span>
             </div>
          </div>
 
          {/* Filter Chips */}
-         <div className="flex flex-wrap gap-6 items-start">
+         <div className="flex flex-wrap gap-4 items-start">
             
             {/* Brand Filter */}
             <div className="space-y-2">
