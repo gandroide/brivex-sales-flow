@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 const config: Config = {
@@ -9,8 +10,22 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        luxury: {
+          black: "#0a0a0a",
+          gold: "#C9A84C",
+          "gold-hover": "#B08D38",
+          white: "#ffffff",
+          gray: "#f4f4f4",
+          "dark-gray": "#1a1a1a",
+        },
+      },
+      fontFamily: {
+        sans: ["var(--font-inter)", "sans-serif"],
+      },
+      backgroundImage: {
+        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
+        "gradient-conic":
+          "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
       },
     },
   },

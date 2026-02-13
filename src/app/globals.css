@@ -2,26 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    @apply bg-luxury-black text-luxury-white;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
+@layer components {
+  .btn-primary {
+    @apply bg-luxury-gold text-luxury-black font-semibold py-3 px-6 rounded-lg
+      hover:bg-luxury-gold-hover transition-colors duration-300
+      disabled:opacity-50 disabled:cursor-not-allowed flex items-center
+      justify-center gap-2 shadow-lg shadow-luxury-gold/20;
+  }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .btn-secondary {
+    @apply border border-luxury-gold text-luxury-gold font-semibold py-3 px-6
+      rounded-lg hover:bg-luxury-gold/10 transition-colors duration-300 flex
+      items-center justify-center gap-2;
+  }
+
+  .input-field {
+    @apply w-full bg-luxury-dark-gray border border-white/10 rounded-lg p-3
+      text-white placeholder-white/30 focus:outline-none
+      focus:border-luxury-gold focus:ring-1 focus:ring-luxury-gold
+      transition-all duration-300;
+  }
+
+  .card {
+    @apply bg-luxury-dark-gray border border-white/5 rounded-xl p-6 shadow-xl;
   }
 }
