@@ -24,7 +24,7 @@ import DroppableSection from '@/components/dossier/DroppableSection';
 import DossierConfigModal from '@/components/dossier/DossierConfigModal';
 import VisualProductSelector from '@/components/dossier/VisualProductSelector';
 import ProductDetailModal from '@/components/dossier/ProductDetailModal';
-import { FileText, ArrowLeft, ShoppingBag, Plus, User, Edit2 } from 'lucide-react';
+import { FileText, ArrowLeft, ShoppingBag, Plus, User, Edit2, X } from 'lucide-react';
 import Link from 'next/link';
 
 // Unified Product Interface
@@ -66,6 +66,10 @@ export default function DossierPage() {
   // New State for Visual Selection
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  
+  // Custom Add Section State
+  const [isAddingSection, setIsAddingSection] = useState(false);
+  const [newSectionName, setNewSectionName] = useState('');
 
   // --- DND SENSORS ---
   const sensors = useSensors(
@@ -119,16 +123,22 @@ export default function DossierPage() {
 
   // --- SECTION MANAGEMENT ---
 
-  const addSection = () => {
-    const name = prompt('Nombre de la nueva sección (ej. Baño Principal):');
-    if (name) {
+  const confirmAddSection = () => {
+    if (newSectionName.trim()) {
       const newSection: Section = {
         id: `section-${Date.now()}`,
-        name,
+        name: newSectionName.trim(),
         items: []
       };
       setSections(prev => [...prev, newSection]);
+      setNewSectionName('');
+      setIsAddingSection(false);
     }
+  };
+
+  const cancelAddSection = () => {
+    setIsAddingSection(false);
+    setNewSectionName('');
   };
 
   const removeSection = (id: string) => {
@@ -353,14 +363,47 @@ export default function DossierPage() {
         
         {/* --- DND ZONES (SECTIONS) --- */}
         <div className="mb-12">
-            <div className="flex justify-between items-end mb-6">
+            <div className="flex justify-between items-end mb-6 min-h-[40px]">
                 <h2 className="text-white/40 text-sm uppercase tracking-wider font-bold">Organización por Ambientes</h2>
-                <button 
-                    onClick={addSection}
-                    className="flex items-center gap-2 text-luxury-gold hover:text-white transition-colors text-sm"
-                >
-                    <Plus size={16} /> Agregar Ambiente
-                </button>
+                
+                {isAddingSection ? (
+                  <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <input 
+                      autoFocus
+                      type="text"
+                      placeholder="Nombre del Área (ej: Baño Visitas)"
+                      className="bg-white/10 border border-white/20 rounded px-3 py-1 text-sm text-white focus:outline-none focus:border-luxury-gold w-64"
+                      value={newSectionName}
+                      onChange={(e) => setNewSectionName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') confirmAddSection();
+                        if (e.key === 'Escape') cancelAddSection();
+                      }}
+                    />
+                    <button 
+                      onClick={confirmAddSection}
+                      className="p-1 bg-luxury-gold text-black rounded hover:bg-white transition-colors"
+                    >
+                      <Plus size={16} />
+                    </button>
+                    <button 
+                      onClick={cancelAddSection}
+                      className="p-1 text-white/50 hover:text-white transition-colors"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <button 
+                      onClick={() => setIsAddingSection(true)}
+                      className="flex items-center gap-2 text-luxury-gold hover:text-white transition-colors text-sm group"
+                  >
+                      <span className="w-5 h-5 rounded-full border border-luxury-gold flex items-center justify-center group-hover:bg-luxury-gold group-hover:text-black transition-colors">
+                        <Plus size={12} />
+                      </span>
+                      Add Area
+                  </button>
+                )}
             </div>
 
             <DndContext 

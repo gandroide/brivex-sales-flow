@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS products (
   image_url   TEXT,
   category    TEXT,
   stock_status TEXT DEFAULT 'in_stock',
+  related_ids TEXT[], -- Array of Product IDs for manual curation
   created_at  TIMESTAMPTZ DEFAULT now()
 );
 
