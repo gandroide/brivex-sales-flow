@@ -691,7 +691,9 @@ const DossierTemplate: React.FC<DossierProps> = ({ sections, salesperson, client
                  {/* LEFT COLUMN: IMAGES */}
                  <View style={styles.leftColumn}>
                      <View style={styles.imageSection}>
+
                         {product.image_url ? (
+                            // eslint-disable-next-line jsx-a11y/alt-text
                             <Image src={product.image_url} style={styles.heroImage} />
                         ) : (
                             <Text style={{color: '#ccc', fontSize: 10}}>Sin Imagen</Text>
@@ -701,6 +703,7 @@ const DossierTemplate: React.FC<DossierProps> = ({ sections, salesperson, client
                      <View style={styles.techDrawingContainer}>
                             <Text style={styles.techLabel}>DIBUJO TÉCNICO</Text>
                             {product.tech_drawing_url ? (
+                                // eslint-disable-next-line jsx-a11y/alt-text
                                 <Image src={product.tech_drawing_url} style={styles.techImage} />
                             ) : (
                                 <Text style={{fontSize: 8, color: '#ccc'}}>Plano no disponible</Text>

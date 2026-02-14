@@ -441,6 +441,14 @@ export default function DossierPage() {
                 <Trash2 size={18} />
              </button>
              
+             <Link 
+                href="/inventory"
+                className="p-2 text-white/40 hover:text-luxury-gold transition-colors"
+                title="Gestión de Inventario"
+             >
+                <ShoppingBag size={18} />
+             </Link>
+             
              <button 
                 onClick={() => setIsHistoryModalOpen(true)}
                 className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-full text-white/60 text-xs hover:bg-white/10 hover:text-white transition-colors flex items-center gap-2"
