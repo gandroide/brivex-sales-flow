@@ -14,6 +14,7 @@ interface Product {
   finish?: string;
   type?: string;
   features?: string[];
+  warranty?: string;
 }
 
 interface ProductCardProps {
@@ -22,12 +23,36 @@ interface ProductCardProps {
   onRemove: (id: string) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onDuplicate: (product: any) => void;
+  onMove?: (productId: string, newSectionId: string) => void;
+  availableSections?: { id: string; name: string }[];
 }
 
-export default function ProductCard({ product, onUpdate, onRemove, onDuplicate }: ProductCardProps) {
+import { useState } from 'react';
+import { ArrowRight } from 'lucide-react';
+
+export default function ProductCard({ product, onUpdate, onRemove, onDuplicate, onMove, availableSections = [] }: ProductCardProps) {
+  const [showMoveDropdown, setShowMoveDropdown] = useState(false);
+  const [featureInput, setFeatureInput] = useState('');
+
   const finalPrice = product.discount 
     ? product.price * (1 - product.discount / 100) 
     : product.price;
+
+  const handleSmartFeatures = () => {
+      if(!featureInput.trim()) return;
+      
+      // Split by newline, bullet, or dash
+      const newLines = featureInput
+        .split(/[\n•-]/)
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+      
+      if (newLines.length > 0) {
+          const currentFeatures = product.features || [];
+          onUpdate(product.id, 'features', [...currentFeatures, ...newLines]);
+          setFeatureInput('');
+      }
+  };
 
   return (
     <div className="card flex flex-col md:flex-row gap-4 items-start relative group">
@@ -45,6 +70,39 @@ export default function ProductCard({ product, onUpdate, onRemove, onDuplicate }
             <h3 className="font-bold text-lg">{product.name}</h3>
           </div>
           <div className="flex items-center gap-1">
+             {/* --- MOVE DROPDOWN --- */}
+             {onMove && availableSections.length > 0 && (
+                <div className="relative">
+                    <button 
+                        onClick={() => setShowMoveDropdown(!showMoveDropdown)}
+                        className="text-white/30 hover:text-luxury-gold transition-colors p-1"
+                        title="Mover a otra sección"
+                    >
+                        <ArrowRight size={18} />
+                    </button>
+                    {showMoveDropdown && (
+                        <>
+                            <div className="fixed inset-0 z-10" onClick={() => setShowMoveDropdown(false)} />
+                            <div className="absolute right-0 top-8 w-48 bg-[#1A1A1A] border border-white/10 rounded-lg shadow-xl z-20 py-1 max-h-60 overflow-y-auto">
+                                <div className="px-3 py-2 text-xs text-white/50 border-b border-white/5 uppercase font-bold">Mover a...</div>
+                                {availableSections.map(section => (
+                                    <button
+                                        key={section.id}
+                                        onClick={() => {
+                                            onMove(product.id, section.id);
+                                            setShowMoveDropdown(false);
+                                        }}
+                                        className="w-full text-left px-3 py-2 text-sm text-white hover:bg-white/10 hover:text-luxury-gold transition-colors truncate"
+                                    >
+                                        {section.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
+
             <button 
                 onClick={() => onDuplicate(product)}
                 className="text-white/30 hover:text-blue-400 transition-colors p-1"
@@ -82,9 +140,9 @@ export default function ProductCard({ product, onUpdate, onRemove, onDuplicate }
               onPointerDown={(e) => e.stopPropagation()}
             />
           </div>
-          <div>
-          </div>
-          <div className="flex flex-col gap-2">
+          <div></div> 
+          
+          <div className="flex flex-col gap-2 col-span-2 md:col-span-1 lg:col-span-2">
             <div className="flex justify-between items-center">
                <label className="text-xs text-white/50 block">Características</label>
             </div>
@@ -101,35 +159,26 @@ export default function ProductCard({ product, onUpdate, onRemove, onDuplicate }
                ))}
             </div>
 
+            {/* --- SMART FEATURES INPUT --- */}
             <div className="flex gap-1">
-               <input 
-                 type="text" 
-                 id={`feature-input-${product.id}`}
-                 className="input-field py-1 px-2 text-xs flex-grow"
-                 placeholder="Add feature (e.g. SoftClose)"
+               <textarea 
+                 rows={1}
+                 className="input-field py-1 px-2 text-xs flex-grow min-h-[32px] resize-none overflow-hidden focus:min-h-[60px] transition-all"
+                 placeholder="Pegar lista o escribir (Enter para guardar)"
+                 value={featureInput}
+                 onChange={(e) => setFeatureInput(e.target.value)}
                  onPointerDown={(e) => e.stopPropagation()}
                  onKeyDown={(e) => {
-                   if (e.key === 'Enter') {
-                     const val = e.currentTarget.value.trim();
-                     if (val) {
-                       const newFeatures = [...(product.features || []), val];
-                       onUpdate(product.id, 'features', newFeatures);
-                       e.currentTarget.value = '';
-                     }
+                   if (e.key === 'Enter' && !e.shiftKey) {
+                     e.preventDefault();
+                     handleSmartFeatures();
                    }
                  }}
                />
                <button 
-                  onClick={() => {
-                    const input = document.getElementById(`feature-input-${product.id}`) as HTMLInputElement;
-                    const val = input.value.trim();
-                     if (val) {
-                       const newFeatures = [...(product.features || []), val];
-                       onUpdate(product.id, 'features', newFeatures);
-                       input.value = '';
-                     }
-                  }}
-                  className="bg-white/10 hover:bg-white/20 px-2 rounded text-xs"
+                  onClick={handleSmartFeatures}
+                  className="bg-white/10 hover:bg-white/20 px-3 rounded text-xs flex items-center justify-center"
+                  title="Añadir (Smart Parse)"
                >
                  +
                </button>

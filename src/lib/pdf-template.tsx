@@ -517,7 +517,8 @@ const styles = StyleSheet.create({
 
    // Section C: TECH DRAWING 
    techDrawingContainer: {
-    flex: 1, 
+    flex: 0.8, 
+    maxHeight: 120,
     borderWidth: 1,
     borderColor: COLORS.border,
     padding: 10,
@@ -598,6 +599,7 @@ interface Product {
   finish?: string;
   type?: string;
   features?: string[];
+  warranty?: string;
 }
 
 const groupProductsByType = (products: Product[]) => {
@@ -621,9 +623,10 @@ interface DossierProps {
   clientName: string;
   projectName?: string;
   date?: string;
+  hidePrices?: boolean;
 }
 
-const DossierTemplate: React.FC<DossierProps> = ({ sections, salesperson, clientName, projectName, date }) => {
+const DossierTemplate: React.FC<DossierProps> = ({ sections, salesperson, clientName, projectName, date, hidePrices = false }) => {
   
   return (
     <Document>
@@ -744,7 +747,13 @@ const DossierTemplate: React.FC<DossierProps> = ({ sections, salesperson, client
                   <View style={styles.specCell}><Text style={styles.specLabel}>ACABADO</Text><Text style={styles.specValue}>{product.finish || '-'}</Text></View>
                   <View style={styles.specCell}><Text style={styles.specLabel}>TIPO</Text><Text style={styles.specValue}>{product.type || category}</Text></View>
                   <View style={styles.specCell}><Text style={styles.specLabel}>ORIGEN</Text><Text style={styles.specValue}>{product.origin || product.brand}</Text></View>
-                  <View style={styles.specCellLast}><Text style={{...styles.specLabel, color: COLORS.accentGold}}>PRECIO</Text><Text style={styles.priceValue}>${Number(product.price).toFixed(2)}</Text></View>
+                  <View style={styles.specCell}><Text style={styles.specLabel}>GARANTÍA</Text><Text style={styles.specValue}>{product.warranty || '-'}</Text></View>
+                  <View style={styles.specCellLast}>
+                    <Text style={{...styles.specLabel, color: COLORS.accentGold}}>PRECIO</Text>
+                    <Text style={styles.priceValue}>
+                        {hidePrices ? 'CONSULTAR' : `$${Number(product.price).toFixed(2)}`}
+                    </Text>
+                  </View>
               </View>
 
             </Page>

@@ -45,6 +45,7 @@ interface Product {
   features?: string[];
   tech_drawing_url?: string;
   origin?: string;
+  warranty?: string;
 }
 
 interface Section {
@@ -82,6 +83,7 @@ export default function DossierPage() {
   // Custom Add Section State
   const [isAddingSection, setIsAddingSection] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
+  const [hidePrices, setHidePrices] = useState(false);
 
   // --- AUTO-SAVE LOGIC ---
   // 1. Load from LocalStorage on Mount
@@ -319,6 +321,41 @@ export default function DossierPage() {
     setActiveId(null);
   };
 
+  const moveProductToSection = (productId: string, newSectionId: string) => {
+    setSections(prevSections => {
+        let productToMove: Product | undefined;
+        let sourceSectionId = '';
+
+        // Remove from source
+        const newSections = prevSections.map(section => {
+            const productIndex = section.items.findIndex(p => p.id === productId);
+            if (productIndex !== -1) {
+                productToMove = section.items[productIndex];
+                sourceSectionId = section.id;
+                return {
+                    ...section,
+                    items: section.items.filter(p => p.id !== productId)
+                };
+            }
+            return section;
+        });
+
+        if (!productToMove || sourceSectionId === newSectionId) return prevSections;
+
+        // Add to destination
+        return newSections.map(section => {
+            if (section.id === newSectionId) {
+                return {
+                    ...section,
+                    items: [...section.items, productToMove!]
+                };
+            }
+            return section;
+        });
+    });
+    success('Producto movido exitosamente');
+  };
+
 
   const handleGenerateClick = () => {
     // Check if any section has items
@@ -337,11 +374,12 @@ export default function DossierPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          sections, // Changed from products
-          salesperson, // New Field
+          sections, 
+          salesperson, 
           clientName: data.clientName,
           projectName: data.projectName,
-          date: data.date
+          date: data.date,
+          hidePrices // Use local state
         }),
       });
 
@@ -529,6 +567,8 @@ export default function DossierPage() {
                         onUpdateProduct={updateProduct}
                         onRemoveProduct={removeProduct}
                         onDuplicateProduct={handleDuplicate}
+                        onMoveProduct={moveProductToSection}
+                        availableSections={sections.map(s => ({ id: s.id, name: s.name }))}
                     />
                 ))}
 
@@ -569,15 +609,33 @@ export default function DossierPage() {
             </p>
           </div>
           
-          <button 
-            disabled={sections.every(s => s.items.length === 0) || generating}
-            onClick={handleGenerateClick}
-            className="btn-primary px-8 py-3 rounded-full flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all text-black font-bold"
-            style={{background: 'linear-gradient(135deg, #C9A84C 0%, #F5D061 100%)'}}
-          >
-            <FileText size={20} /> 
-            {generating ? 'Generando...' : 'Generar PDF'}
-          </button>
+
+          
+          <div className="flex items-center gap-6">
+             {/* Hide Prices Toggle */}
+             <div className="flex items-center gap-2 bg-white/5 px-3 py-2 rounded-lg border border-white/5">
+                <input
+                  type="checkbox"
+                  id="mainHidePrices"
+                  checked={hidePrices}
+                  onChange={(e) => setHidePrices(e.target.checked)}
+                  className="h-4 w-4 rounded border border-white/20 bg-black/50 text-luxury-gold focus:ring-1 focus:ring-luxury-gold checked:bg-luxury-gold cursor-pointer"
+                />
+                <label htmlFor="mainHidePrices" className="text-xs font-medium text-white/80 cursor-pointer select-none uppercase tracking-wider">
+                  Ocultar Precios
+                </label>
+             </div>
+
+             <button 
+               disabled={sections.every(s => s.items.length === 0) || generating}
+               onClick={handleGenerateClick}
+               className="btn-primary px-8 py-3 rounded-full flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all text-black font-bold"
+               style={{background: 'linear-gradient(135deg, #C9A84C 0%, #F5D061 100%)'}}
+             >
+               <FileText size={20} /> 
+               {generating ? 'Generando...' : 'Generar PDF'}
+             </button>
+          </div>
         </div>
       </div>
 

@@ -22,10 +22,12 @@ interface SectionProps {
   onRemoveProduct: (id: string) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onDuplicateProduct: (product: any) => void;
+  onMoveProduct: (productId: string, newSectionId: string) => void;
+  availableSections: { id: string; name: string }[];
 }
 
 
-export default function DroppableSection({ section, onRename, onRemoveSection, onUpdateProduct, onRemoveProduct, onDuplicateProduct }: SectionProps) {
+export default function DroppableSection({ section, onRename, onRemoveSection, onUpdateProduct, onRemoveProduct, onDuplicateProduct, onMoveProduct, availableSections }: SectionProps) {
   const { setNodeRef } = useDroppable({
     id: section.id,
   });
@@ -117,6 +119,8 @@ export default function DroppableSection({ section, onRename, onRemoveSection, o
               onUpdate={onUpdateProduct} 
               onRemove={onRemoveProduct} 
               onDuplicate={onDuplicateProduct}
+              onMove={onMoveProduct}
+              availableSections={availableSections}
             />
           ))}
         </div>

@@ -10,9 +10,11 @@ interface SortableProductCardProps {
   onRemove: (id: string) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onDuplicate: (product: any) => void;
+  onMove: (productId: string, newSectionId: string) => void;
+  availableSections: { id: string; name: string }[];
 }
 
-export default function SortableProductCard({ product, onUpdate, onRemove, onDuplicate }: SortableProductCardProps) {
+export default function SortableProductCard({ product, onUpdate, onRemove, onDuplicate, onMove, availableSections }: SortableProductCardProps) {
   const {
     attributes,
     listeners,
@@ -32,7 +34,14 @@ export default function SortableProductCard({ product, onUpdate, onRemove, onDup
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="touch-none">
        {/* Wrap ProductCard but disable its internal drag handlers if any, though ProductCard is just display */}
-       <ProductCard product={product} onUpdate={onUpdate} onRemove={onRemove} onDuplicate={onDuplicate} />
+       <ProductCard 
+          product={product} 
+          onUpdate={onUpdate} 
+          onRemove={onRemove} 
+          onDuplicate={onDuplicate} 
+          onMove={onMove}
+          availableSections={availableSections}
+        />
     </div>
   );
 }
