@@ -6,7 +6,7 @@ import ProductCard from './ProductCard';
 interface SortableProductCardProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   product: any; 
-  onUpdate: (id: string, field: 'discount' | 'note' | 'features', value: number | string | string[]) => void;
+  onUpdate: (id: string, field: 'discount' | 'note' | 'features' | 'warranty_type' | 'warranty_duration', value: number | string | string[]) => void;
   onRemove: (id: string) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onDuplicate: (product: any) => void;

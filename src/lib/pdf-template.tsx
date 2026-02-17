@@ -581,6 +581,15 @@ const styles = StyleSheet.create({
   specLabel: { fontSize: 6, color: '#888', textTransform: 'uppercase', marginBottom: 3, letterSpacing: 1 },
   specValue: { fontSize: 9, color: COLORS.primaryDark, fontWeight: 'bold' },
   priceValue: { fontSize: 14, color: COLORS.accentGold, fontWeight: 'bold' },
+
+  // New Warranty Block
+  warrantyBlock: {
+    marginTop: 'auto', 
+    paddingTop: 15,
+    alignItems: 'flex-start',
+  },
+  warrantyTitle: { fontSize: 7, color: '#888', letterSpacing: 1, textTransform: 'uppercase' },
+  warrantyValue: { fontSize: 10, color: COLORS.accentGold, fontWeight: 'bold', marginTop: 2 },
 });
 
 // --- LÓGICA DE AGRUPACIÓN ---
@@ -599,7 +608,8 @@ interface Product {
   finish?: string;
   type?: string;
   features?: string[];
-  warranty?: string;
+  warranty_type?: string;     
+  warranty_duration?: string; 
 }
 
 const groupProductsByType = (products: Product[]) => {
@@ -737,9 +747,19 @@ const DossierTemplate: React.FC<DossierProps> = ({ sections, salesperson, client
                                 </View>
                             )}
                      </View>
+
+                             {(product.warranty_type || product.warranty_duration) && (
+                              <View style={styles.warrantyBlock}>
+                                    <Text style={styles.warrantyTitle}>{product.warranty_type || 'GARANTÍA'}</Text>
+                                    {product.warranty_duration && (
+                                        <Text style={styles.warrantyValue}>{product.warranty_duration}</Text>
+                                    )}
+                              </View>
+                            )}
+                     </View>
                  </View>
 
-              </View>
+
 
               {/* 3. BOTTOM BAR */}
               <View style={styles.bottomBar}>
@@ -747,7 +767,6 @@ const DossierTemplate: React.FC<DossierProps> = ({ sections, salesperson, client
                   <View style={styles.specCell}><Text style={styles.specLabel}>ACABADO</Text><Text style={styles.specValue}>{product.finish || '-'}</Text></View>
                   <View style={styles.specCell}><Text style={styles.specLabel}>TIPO</Text><Text style={styles.specValue}>{product.type || category}</Text></View>
                   <View style={styles.specCell}><Text style={styles.specLabel}>ORIGEN</Text><Text style={styles.specValue}>{product.origin || product.brand}</Text></View>
-                  <View style={styles.specCell}><Text style={styles.specLabel}>GARANTÍA</Text><Text style={styles.specValue}>{product.warranty || '-'}</Text></View>
                   <View style={styles.specCellLast}>
                     <Text style={{...styles.specLabel, color: COLORS.accentGold}}>PRECIO</Text>
                     <Text style={styles.priceValue}>

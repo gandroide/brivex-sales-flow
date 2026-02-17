@@ -18,7 +18,7 @@ interface SectionProps {
   };
   onRename: (id: string, newName: string) => void;
   onRemoveSection: (id: string) => void;
-  onUpdateProduct: (id: string, field: 'discount' | 'note' | 'features', value: number | string | string[]) => void;
+  onUpdateProduct: (id: string, field: 'discount' | 'note' | 'features' | 'warranty_type' | 'warranty_duration', value: number | string | string[]) => void;
   onRemoveProduct: (id: string) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onDuplicateProduct: (product: any) => void;

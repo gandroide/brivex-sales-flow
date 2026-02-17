@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Check, ShoppingBag, Loader2, Camera, Link as LinkIcon, Trash2, Search  } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import ProductImageFallback from '../ui/ProductImageFallback';
 // Importa o define ProductSearch si lo usas, si no, lo hemos reemplazado con lógica interna.
 
 interface Product {
@@ -328,11 +329,12 @@ export default function ProductDetailModal({ product: initialProduct, isOpen, on
            
            {/* MAIN IMAGE AREA */}
            <div className="relative w-full aspect-square p-8 flex items-center justify-center group bg-white border-b border-gray-100">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                src={product.image_url} 
-                alt={product.name} 
-                className={`w-full h-full object-contain transition-opacity ${uploadingImage ? 'opacity-50' : 'opacity-100'}`}
+              <ProductImageFallback
+                src={product.image_url}
+                alt={product.name}
+                brand={product.brand}
+                className="w-full h-full bg-white"
+                imageClassName={`object-contain transition-opacity ${uploadingImage ? 'opacity-50' : 'opacity-100'}`}
               />
                
               {/* Upload Overlay */}
@@ -535,7 +537,7 @@ export default function ProductDetailModal({ product: initialProduct, isOpen, on
                        >
                          {/* Manual Link Indicator / Unlink */}
                          {isManual && (
-                             <div className="absolute top-1 left-1 z-20">
+                             <div className="absolute top-1 left-1 z-40">
                                  <div 
                                     className="bg-blue-50 text-blue-600 p-1 rounded-full shadow-sm group-hover:hidden border border-blue-100"
                                     title="Producto Vinculado Manualmente"
@@ -556,7 +558,7 @@ export default function ProductDetailModal({ product: initialProduct, isOpen, on
                          )}
 
                          {/* Selection Checkbox */}
-                         <div className="absolute top-2 right-2 z-10">
+                         <div className="absolute top-2 right-2 z-40">
                            <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${isSelected ? 'bg-luxury-gold border-luxury-gold text-white' : 'bg-white border-gray-300'}`}>
                               {isSelected && <Check size={12} />}
                            </div>
@@ -564,11 +566,12 @@ export default function ProductDetailModal({ product: initialProduct, isOpen, on
 
                          <div className="p-3">
                            <div className="aspect-square mb-2 bg-white rounded-lg flex items-center justify-center">
-                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                             <img 
-                                src={sugg.image_url} 
-                                className="w-full h-full object-contain p-1"
+                             <ProductImageFallback
+                                src={sugg.image_url}
                                 alt={sugg.name}
+                                brand={sugg.brand}
+                                className="w-full h-full"
+                                imageClassName="object-contain p-1"
                              />
                            </div>
                            <h4 className="font-bold text-xs text-gray-900 line-clamp-2 min-h-[2.5em]">{sugg.name}</h4>

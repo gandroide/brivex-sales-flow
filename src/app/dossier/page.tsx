@@ -45,7 +45,8 @@ interface Product {
   features?: string[];
   tech_drawing_url?: string;
   origin?: string;
-  warranty?: string;
+  warranty_type?: string;
+  warranty_duration?: string;
 }
 
 interface Section {
@@ -149,7 +150,7 @@ export default function DossierPage() {
     })));
   };
 
-  const updateProduct = (id: string, field: 'discount' | 'note' | 'features', value: number | string | string[]) => {
+  const updateProduct = (id: string, field: 'discount' | 'note' | 'features' | 'warranty_type' | 'warranty_duration', value: number | string | string[]) => {
     setSections(prev => prev.map(section => ({
       ...section,
       items: section.items.map(p => p.id === id ? { ...p, [field]: value } : p)

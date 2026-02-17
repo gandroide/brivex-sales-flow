@@ -1,5 +1,6 @@
 
 import { Trash2, Copy } from 'lucide-react';
+import ProductImageFallback from '../ui/ProductImageFallback';
 
 interface Product {
   id: string;
@@ -14,12 +15,13 @@ interface Product {
   finish?: string;
   type?: string;
   features?: string[];
-  warranty?: string;
+  warranty_type?: string;
+  warranty_duration?: string;
 }
 
 interface ProductCardProps {
   product: Product;
-  onUpdate: (id: string, field: 'discount' | 'note' | 'features', value: number | string | string[]) => void;
+  onUpdate: (id: string, field: 'discount' | 'note' | 'features' | 'warranty_type' | 'warranty_duration', value: number | string | string[]) => void;
   onRemove: (id: string) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onDuplicate: (product: any) => void;
@@ -56,11 +58,12 @@ export default function ProductCard({ product, onUpdate, onRemove, onDuplicate, 
 
   return (
     <div className="card flex flex-col md:flex-row gap-4 items-start relative group">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img 
-        src={product.image_url} 
-        alt={product.name} 
-        className="w-full md:w-32 h-32 object-cover rounded-lg border border-white/10"
+      <ProductImageFallback
+        src={product.image_url}
+        alt={product.name}
+        brand={product.brand}
+        className="w-full md:w-32 h-32 rounded-lg border border-white/10"
+        imageClassName="object-cover"
       />
       
       <div className="flex-grow w-full">
@@ -183,6 +186,34 @@ export default function ProductCard({ product, onUpdate, onRemove, onDuplicate, 
                  +
                </button>
             </div>
+
+
+            {/* --- WARRANTY FIELDS --- */}
+            <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-white/5">
+                <div>
+                   <label className="text-xs text-white/50 block mb-1">Tipo de Garantía</label>
+                   <input 
+                     type="text"
+                     className="input-field py-1 px-2 text-xs w-full"
+                     placeholder="Ej: Fábrica"
+                     value={product.warranty_type || ''}
+                     onChange={(e) => onUpdate(product.id, 'warranty_type', e.target.value)}
+                     onPointerDown={(e) => e.stopPropagation()}
+                   />
+                </div>
+                <div>
+                   <label className="text-xs text-white/50 block mb-1">Duración</label>
+                   <input 
+                     type="text"
+                     className="input-field py-1 px-2 text-xs w-full"
+                     placeholder="Ej: 5 Años"
+                     value={product.warranty_duration || ''}
+                     onChange={(e) => onUpdate(product.id, 'warranty_duration', e.target.value)}
+                     onPointerDown={(e) => e.stopPropagation()}
+                   />
+                </div>
+            </div>
+
           </div>
         </div>
       </div>
