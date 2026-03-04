@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Search, Loader2, SlidersHorizontal } from 'lucide-react';
+import { Search, Loader2, SlidersHorizontal, Pencil } from 'lucide-react';
 import FilterDrawer from './FilterDrawer';
 import ActiveFilters from './ActiveFilters';
 import ProductImageFallback from '../ui/ProductImageFallback';
+import ProductEditorDrawer from './ProductEditorDrawer';
 
 interface Product {
   id: string;
@@ -36,6 +37,7 @@ export default function VisualProductSelector({ onSelectProduct }: VisualProduct
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   
   // Filters
   const [activeBrand, setActiveBrand] = useState<string | null>(null);
@@ -332,6 +334,20 @@ export default function VisualProductSelector({ onSelectProduct }: VisualProduct
                         )}
                      </div>
 
+                     {/* Edit Button */}
+                     <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-40">
+                        <button
+                          onClick={(e) => {
+                             e.stopPropagation();
+                             setEditingProduct(product);
+                          }}
+                          className="p-1.5 bg-black/50 hover:bg-black/80 backdrop-blur-sm rounded-full text-white/70 hover:text-luxury-gold transition-all border border-white/10"
+                          title="Editar Producto"
+                        >
+                           <Pencil size={14} />
+                        </button>
+                     </div>
+
                      {/* Overlay on Hover */}
                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 z-30" />
                   </div>
@@ -384,6 +400,16 @@ export default function VisualProductSelector({ onSelectProduct }: VisualProduct
                 setActiveFinish(null);
             }}
             resultCount={products.length} // Note: This shows currently loaded count, not total possible matches. To show total matches we'd need a separate COUNT query.
+       />
+
+       {/* --- EDITOR DRAWER --- */}
+       <ProductEditorDrawer 
+            isOpen={editingProduct !== null}
+            onClose={() => setEditingProduct(null)}
+            product={editingProduct}
+            onSave={(updatedProduct) => {
+                setProducts(prev => prev.map(p => p.id === updatedProduct.id ? { ...p, ...updatedProduct } : p));
+            }}
        />
 
     </div>

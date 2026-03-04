@@ -11,10 +11,12 @@ interface SortableProductCardProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onDuplicate: (product: any) => void;
   onMove: (productId: string, newSectionId: string) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onEditRequest?: (product: any) => void;
   availableSections: { id: string; name: string }[];
 }
 
-export default function SortableProductCard({ product, onUpdate, onRemove, onDuplicate, onMove, availableSections }: SortableProductCardProps) {
+export default function SortableProductCard({ product, onUpdate, onRemove, onDuplicate, onMove, onEditRequest, availableSections }: SortableProductCardProps) {
   const {
     attributes,
     listeners,
@@ -40,6 +42,7 @@ export default function SortableProductCard({ product, onUpdate, onRemove, onDup
           onRemove={onRemove} 
           onDuplicate={onDuplicate} 
           onMove={onMove}
+          onEditRequest={onEditRequest}
           availableSections={availableSections}
         />
     </div>

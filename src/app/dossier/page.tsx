@@ -23,6 +23,7 @@ import DossierConfigModal from '@/components/dossier/DossierConfigModal';
 import HistoryModal from '../../components/dossier/HistoryModal'; // Relative Import Fix
 import VisualProductSelector from '@/components/dossier/VisualProductSelector';
 import ProductDetailModal from '@/components/dossier/ProductDetailModal';
+import ProductEditorDrawer from '@/components/dossier/ProductEditorDrawer';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import { FileText, ArrowLeft, ShoppingBag, Plus, User, Edit2, X, Trash2, Clock } from 'lucide-react';
 import Link from 'next/link';
@@ -80,6 +81,7 @@ export default function DossierPage() {
   // New State for Visual Selection
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   
   // Custom Add Section State
   const [isAddingSection, setIsAddingSection] = useState(false);
@@ -154,6 +156,13 @@ export default function DossierPage() {
     setSections(prev => prev.map(section => ({
       ...section,
       items: section.items.map(p => p.id === id ? { ...p, [field]: value } : p)
+    })));
+  };
+
+  const handleEditProduct = (updatedProduct: Product) => {
+    setSections(prev => prev.map(section => ({
+      ...section,
+      items: section.items.map(p => p.id === updatedProduct.id ? { ...p, ...updatedProduct } : p)
     })));
   };
 
@@ -569,6 +578,7 @@ export default function DossierPage() {
                         onRemoveProduct={removeProduct}
                         onDuplicateProduct={handleDuplicate}
                         onMoveProduct={moveProductToSection}
+                        onEditRequest={setEditingProduct}
                         availableSections={sections.map(s => ({ id: s.id, name: s.name }))}
                     />
                 ))}
@@ -660,6 +670,13 @@ export default function DossierPage() {
         product={viewProduct}
         onClose={() => setIsDetailModalOpen(false)}
         onAddToDossier={handleAddMultiple}
+      />
+
+      <ProductEditorDrawer 
+        isOpen={editingProduct !== null}
+        onClose={() => setEditingProduct(null)}
+        product={editingProduct}
+        onSave={handleEditProduct}
       />
 
       <ConfirmationModal 

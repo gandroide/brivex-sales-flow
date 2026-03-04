@@ -1,5 +1,5 @@
 
-import { Trash2, Copy } from 'lucide-react';
+import { Trash2, Copy, Pencil } from 'lucide-react';
 import ProductImageFallback from '../ui/ProductImageFallback';
 
 interface Product {
@@ -26,13 +26,14 @@ interface ProductCardProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onDuplicate: (product: any) => void;
   onMove?: (productId: string, newSectionId: string) => void;
+  onEditRequest?: (product: Product) => void;
   availableSections?: { id: string; name: string }[];
 }
 
 import { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 
-export default function ProductCard({ product, onUpdate, onRemove, onDuplicate, onMove, availableSections = [] }: ProductCardProps) {
+export default function ProductCard({ product, onUpdate, onRemove, onDuplicate, onMove, onEditRequest, availableSections = [] }: ProductCardProps) {
   const [showMoveDropdown, setShowMoveDropdown] = useState(false);
   const [featureInput, setFeatureInput] = useState('');
 
@@ -104,6 +105,16 @@ export default function ProductCard({ product, onUpdate, onRemove, onDuplicate, 
                         </>
                     )}
                 </div>
+            )}
+
+            {onEditRequest && (
+              <button 
+                  onClick={() => onEditRequest(product)}
+                  className="text-white/30 hover:text-luxury-gold transition-colors p-1"
+                  title="Editar Producto DB"
+              >
+                  <Pencil size={18} />
+              </button>
             )}
 
             <button 
