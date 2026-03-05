@@ -19,6 +19,7 @@ interface HistoryModalProps {
 }
 
 export default function HistoryModal({ isOpen, onClose, onLoad, currentState }: HistoryModalProps) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
