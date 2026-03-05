@@ -670,6 +670,7 @@ export default function DossierPage() {
         product={viewProduct}
         onClose={() => setIsDetailModalOpen(false)}
         onAddToDossier={handleAddMultiple}
+        onUpdateProduct={handleEditProduct}
       />
 
       <ProductEditorDrawer 

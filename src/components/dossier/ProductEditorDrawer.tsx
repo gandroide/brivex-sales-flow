@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { X, Save, Loader2 } from 'lucide-react';
+import { X, Save, Loader2, Camera } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
+import ProductImageFallback from '../ui/ProductImageFallback';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface ProductEditorDrawerProps {
@@ -18,6 +19,7 @@ export interface ProductEditorDrawerProps {
 export default function ProductEditorDrawer({ isOpen, onClose, product, onSave }: ProductEditorDrawerProps) {
   const { success, error: toastError } = useToast();
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   
   // Local form state
   const [form, setForm] = useState({
@@ -59,6 +61,49 @@ export default function ProductEditorDrawer({ isOpen, onClose, product, onSave }
       ...prev, 
       [name]: name === 'price' ? parseFloat(value) || 0 : value 
     }));
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || !product) return;
+    
+    const file = e.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${product.sku}-${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    setUploadingImage(true);
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      const { error: dbError } = await supabase
+        .from('products')
+        .update({ image_url: publicUrl })
+        .eq('id', product.id);
+
+      if (dbError) throw dbError;
+
+      setForm(prev => ({ ...prev, image_url: publicUrl }));
+      // Refrescar el estado/UI mediante el callback onSave sin cerrar el modal
+      onSave({ ...product, ...form, image_url: publicUrl });
+      
+      success('Imagen actualizada y guardada correctamente.');
+
+    } catch (err) {
+      const error = err as Error;
+      console.error('Error uploading image:', error);
+      toastError(error.message || 'Error al subir la imagen');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -182,12 +227,57 @@ export default function ProductEditorDrawer({ isOpen, onClose, product, onSave }
                     />
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-xs uppercase tracking-wider text-white/50 font-bold">Image URL</label>
-                    <input 
-                      type="text" name="image_url" value={form.image_url} onChange={handleChange}
-                      className="w-full bg-black/20 border border-white/10 rounded-md p-2 text-sm focus:border-luxury-gold focus:outline-none text-white"
-                    />
+                <div className="space-y-4 border border-white/10 p-4 rounded-lg bg-black/20">
+                    <label className="text-xs uppercase tracking-wider text-white/50 font-bold block mb-2">Fotografía Principal (Image URL)</label>
+                    <div className="flex gap-4 items-start">
+                        {/* Thumbnail Preview */}
+                        <div className="relative w-24 h-24 bg-white rounded-md overflow-hidden flex-shrink-0 border border-white/10 flex items-center justify-center">
+                            {form.image_url ? (
+                                <ProductImageFallback
+                                    src={form.image_url}
+                                    alt={form.name || "Product Image"}
+                                    brand={form.brand}
+                                    className="w-full h-full"
+                                    imageClassName={`object-contain transition-opacity ${uploadingImage ? 'opacity-50' : 'opacity-100'}`}
+                                />
+                            ) : (
+                                <div className="text-gray-400 flex flex-col items-center justify-center text-xs">
+                                    <Camera size={24} className="mb-1" />
+                                    <span>No Image</span>
+                                </div>
+                            )}
+                            {uploadingImage && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                                    <Loader2 className="animate-spin text-luxury-gold" size={20} />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Controls */}
+                        <div className="flex-1 space-y-3">
+                            <div>
+                                <label className="cursor-pointer bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded shadow-sm border border-white/10 flex items-center justify-center gap-2 text-sm font-bold transition-all w-full">
+                                    <Camera size={16} />
+                                    <span>{form.image_url ? 'Cambiar Imagen' : 'Subir Imagen'}</span>
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        className="hidden" 
+                                        disabled={uploadingImage}
+                                        onChange={handleImageUpload}
+                                    />
+                                </label>
+                            </div>
+                            <input 
+                                type="text" 
+                                name="image_url" 
+                                value={form.image_url} 
+                                onChange={handleChange}
+                                placeholder="https://..."
+                                className="w-full bg-black/20 border border-white/10 rounded-md p-2 text-xs focus:border-luxury-gold focus:outline-none text-white/70"
+                            />
+                        </div>
+                    </div>
                 </div>
                 
                 <div className="space-y-2">

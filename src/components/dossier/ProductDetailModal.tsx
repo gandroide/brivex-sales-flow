@@ -26,9 +26,10 @@ interface ProductDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddToDossier: (products: Product[]) => void;
+  onUpdateProduct?: (product: Product) => void;
 }
 
-export default function ProductDetailModal({ product: initialProduct, isOpen, onClose, onAddToDossier }: ProductDetailModalProps) {
+export default function ProductDetailModal({ product: initialProduct, isOpen, onClose, onAddToDossier, onUpdateProduct }: ProductDetailModalProps) {
   const [product, setProduct] = useState<Product | null>(initialProduct);
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
@@ -100,7 +101,9 @@ export default function ProductDetailModal({ product: initialProduct, isOpen, on
 
       if (dbError) throw dbError;
 
-      setProduct(prev => prev ? ({ ...prev, image_url: publicUrl }) : null);
+      const updatedProduct = { ...product, image_url: publicUrl };
+      setProduct(updatedProduct);
+      if (onUpdateProduct) onUpdateProduct(updatedProduct);
 
     } catch (error) {
       console.error('Error uploading image:', error);
@@ -138,7 +141,9 @@ export default function ProductDetailModal({ product: initialProduct, isOpen, on
 
       if (dbError) throw dbError;
 
-      setProduct(prev => prev ? ({ ...prev, tech_drawing_url: publicUrl }) : null);
+      const updatedProduct = { ...product, tech_drawing_url: publicUrl };
+      setProduct(updatedProduct);
+      if (onUpdateProduct) onUpdateProduct(updatedProduct);
 
     } catch (error) {
       console.error('Error uploading tech drawing:', error);
@@ -338,10 +343,10 @@ export default function ProductDetailModal({ product: initialProduct, isOpen, on
               />
                
               {/* Upload Overlay */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/5">
+              <div className={`absolute inset-0 flex items-center justify-center bg-black/5 transition-opacity z-50 ${(!product.image_url || !product.image_url.startsWith('http')) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                  <label className="cursor-pointer bg-white text-gray-800 px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm font-bold transform hover:scale-105 transition-all border border-gray-200">
                    {uploadingImage ? <Loader2 className="animate-spin" size={16} /> : <Camera size={16} />}
-                   <span>Cambiar Foto</span>
+                   <span>{product.image_url && product.image_url.startsWith('http') ? 'Cambiar Foto' : 'Subir Foto'}</span>
                    <input 
                      type="file" 
                      accept="image/*" 

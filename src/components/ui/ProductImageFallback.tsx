@@ -22,7 +22,7 @@ export default function ProductImageFallback({
   
   // Reset state when src changes
   useEffect(() => {
-    if (!src) {
+    if (!src || !src.startsWith('http')) {
         setImageState('error');
     } else {
         setImageState('loading');
