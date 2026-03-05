@@ -19,10 +19,10 @@ interface HistoryModalProps {
 }
 
 export default function HistoryModal({ isOpen, onClose, onLoad, currentState }: HistoryModalProps) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [hydratingId, setHydratingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const { success, error: toastError } = useToast();
   
@@ -157,6 +157,78 @@ export default function HistoryModal({ isOpen, onClose, onLoad, currentState }: 
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleLoadClick = async (item: any) => {
+    setHydratingId(item.id);
+    try {
+        const data = item.data;
+        if (!data || !data.sections) {
+            onLoad(data);
+            return;
+        }
+
+        // 1. Extract all product IDs
+        const productIds = new Set<string>();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data.sections.forEach((section: any) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            section.items.forEach((p: any) => {
+                if (p.id) productIds.add(p.id);
+            });
+        });
+
+        if (productIds.size === 0) {
+            onLoad(data);
+            return;
+        }
+
+        // 2. Fetch fresh URLs from products table
+        const { data: productsData, error } = await supabase
+            .from('products')
+            .select('id, image_url, tech_drawing_url')
+            .in('id', Array.from(productIds));
+
+        if (error) {
+            console.error('Error hydrating products:', error);
+            onLoad(data); // gracefully fallback
+            return;
+        }
+
+        // 3. Map the fresh URLs
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const productMap = new Map((productsData || []).map((p: any) => [p.id, p]));
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const hydratedSections = data.sections.map((section: any) => ({
+            ...section,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            items: section.items.map((p: any) => {
+                const freshData = productMap.get(p.id);
+                if (freshData) {
+                    return { 
+                        ...p, 
+                        image_url: freshData.image_url,
+                        tech_drawing_url: freshData.tech_drawing_url 
+                    };
+                }
+                return p;
+            })
+        }));
+
+        const hydratedData = {
+            ...data,
+            sections: hydratedSections
+        };
+
+        onLoad(hydratedData);
+    } catch (err) {
+        console.error('Hydration failed:', err);
+        onLoad(item.data);
+    } finally {
+        setHydratingId(null);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -220,11 +292,15 @@ export default function HistoryModal({ isOpen, onClose, onLoad, currentState }: 
                         {history.map(item => (
                             <button 
                                 key={item.id}
-                                onClick={() => onLoad(item.data)}
-                                className="w-full flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl group transition-all text-left"
+                                onClick={() => handleLoadClick(item)}
+                                disabled={hydratingId === item.id}
+                                className="w-full flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl group transition-all text-left disabled:opacity-50"
                             >
                                 <div className="flex-1">
-                                    <h4 className="font-bold text-white">{item.project_name}</h4>
+                                    <h4 className="font-bold text-white flex items-center gap-2">
+                                        {item.project_name}
+                                        {hydratingId === item.id && <Loader2 size={14} className="animate-spin text-luxury-gold" />}
+                                    </h4>
                                     <p className="text-xs text-white/50">{item.client_name} • {item.salesperson}</p>
                                 </div>
                                 <div className="flex items-center gap-3">
