@@ -372,7 +372,7 @@
 
 // --- COLORES PREMIUM ---
 import React from 'react';
-import { Page, Text, View, Document, StyleSheet, Image } from '@react-pdf/renderer';
+import { Page, Text, View, Document, StyleSheet, Image, Link } from '@react-pdf/renderer';
 
 const COLORS = {
   primaryDark: '#1A1A1A', // Architect Black
@@ -526,8 +526,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     position: 'relative',
   },
-  techLabel: { position: 'absolute', top: 5, left: 5, fontSize: 6, color: '#999', textTransform: 'uppercase' },
-  techImage: { width: '100%', height: '100%', objectFit: 'contain', marginTop: 10 },
+  techLabel: { position: 'absolute', top: 5, left: 5, fontSize: 6, color: '#999', textTransform: 'uppercase', zIndex: 1 },
+  techLink: { width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: 10 },
+  techImage: { width: '100%', height: '100%', objectFit: 'contain' },
 
 
   // Right Column (Text Content)
@@ -716,8 +717,10 @@ const DossierTemplate: React.FC<DossierProps> = ({ sections, salesperson, client
                      <View style={styles.techDrawingContainer}>
                             <Text style={styles.techLabel}>DIBUJO TÉCNICO</Text>
                             {product.tech_drawing_url ? (
-                                // eslint-disable-next-line jsx-a11y/alt-text
-                                <Image src={product.tech_drawing_url} style={styles.techImage} />
+                                <Link src={product.tech_drawing_url} style={styles.techLink}>
+                                    {/* eslint-disable-next-line jsx-a11y/alt-text */}
+                                    <Image src={product.tech_drawing_url} style={styles.techImage} />
+                                </Link>
                             ) : (
                                 <Text style={{fontSize: 8, color: '#ccc'}}>Plano no disponible</Text>
                             )}

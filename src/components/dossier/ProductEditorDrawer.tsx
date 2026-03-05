@@ -20,6 +20,7 @@ export default function ProductEditorDrawer({ isOpen, onClose, product, onSave }
   const { success, error: toastError } = useToast();
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingTech, setUploadingTech] = useState(false);
   
   // Local form state
   const [form, setForm] = useState({
@@ -103,6 +104,48 @@ export default function ProductEditorDrawer({ isOpen, onClose, product, onSave }
       toastError(error.message || 'Error al subir la imagen');
     } finally {
       setUploadingImage(false);
+    }
+  };
+
+  const handleTechUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || !product) return;
+    
+    const file = e.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${product.sku}-tech-${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    setUploadingTech(true);
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      const { error: dbError } = await supabase
+        .from('products')
+        .update({ tech_drawing_url: publicUrl })
+        .eq('id', product.id);
+
+      if (dbError) throw dbError;
+
+      setForm(prev => ({ ...prev, tech_drawing_url: publicUrl }));
+      onSave({ ...product, ...form, tech_drawing_url: publicUrl });
+      
+      success('Plano técnico actualizado y guardado correctamente.');
+
+    } catch (err) {
+      const error = err as Error;
+      console.error('Error uploading tech drawing:', error);
+      toastError(error.message || 'Error al subir el plano técnico');
+    } finally {
+      setUploadingTech(false);
     }
   };
 
@@ -280,12 +323,56 @@ export default function ProductEditorDrawer({ isOpen, onClose, product, onSave }
                     </div>
                 </div>
                 
-                <div className="space-y-2">
-                    <label className="text-xs uppercase tracking-wider text-white/50 font-bold">Tech Drawing URL</label>
-                    <input 
-                      type="text" name="tech_drawing_url" value={form.tech_drawing_url} onChange={handleChange}
-                      className="w-full bg-black/20 border border-white/10 rounded-md p-2 text-sm focus:border-luxury-gold focus:outline-none text-white"
-                    />
+                <div className="space-y-4 border border-white/10 p-4 rounded-lg bg-black/20">
+                    <label className="text-xs uppercase tracking-wider text-white/50 font-bold block mb-2">Plano Técnico (Tech Drawing URL)</label>
+                    <div className="flex gap-4 items-start">
+                        {/* Thumbnail Preview */}
+                        <div className="relative w-24 h-24 bg-white rounded-md overflow-hidden flex-shrink-0 border border-white/10 flex items-center justify-center p-2">
+                            {form.tech_drawing_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img 
+                                    src={form.tech_drawing_url} 
+                                    alt="Technical Drawing" 
+                                    className={`w-full h-full object-contain mix-blend-multiply transition-opacity ${uploadingTech ? 'opacity-50' : 'opacity-100'}`}
+                                />
+                            ) : (
+                                <div className="text-gray-400 flex flex-col items-center justify-center text-xs">
+                                    <Camera size={24} className="mb-1" />
+                                    <span>No Plano</span>
+                                </div>
+                            )}
+                            {uploadingTech && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                                    <Loader2 className="animate-spin text-luxury-gold" size={20} />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Controls */}
+                        <div className="flex-1 space-y-3">
+                            <div>
+                                <label className="cursor-pointer bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded shadow-sm border border-white/10 flex items-center justify-center gap-2 text-sm font-bold transition-all w-full">
+                                    <Camera size={16} />
+                                    <span>{form.tech_drawing_url ? 'Cambiar Plano' : 'Subir Plano'}</span>
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        className="hidden" 
+                                        disabled={uploadingTech}
+                                        onChange={handleTechUpload}
+                                    />
+                                </label>
+                            </div>
+                            <input 
+                                type="text" 
+                                name="tech_drawing_url" 
+                                value={form.tech_drawing_url} 
+                                onChange={handleChange}
+                                placeholder="https://..."
+                                className="w-full bg-black/20 border border-white/10 rounded-md p-2 text-xs focus:border-luxury-gold focus:outline-none text-white/70"
+                            />
+                        </div>
+                    </div>
                 </div>
 
             </form>
